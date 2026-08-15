@@ -104,7 +104,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<tw-storydata name="Feeder" startnode="65" creator="Twine" creator-version="2.12.0" format="SugarCube" format-version="2.37.3" ifid="3935CAB6-0E21-413E-8EB2-3A1A58FBC0DA" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* 在 Story Stylesheet 最顶部引入像素字体 */
+	<tw-storydata name="Feeder" startnode="64" creator="Twine" creator-version="2.12.0" format="SugarCube" format-version="2.37.3" ifid="3935CAB6-0E21-413E-8EB2-3A1A58FBC0DA" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* 在 Story Stylesheet 最顶部引入像素字体 */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
 
 /* 正文字号:调小到1.3em(原1.6em) */
@@ -1016,9 +1016,20 @@ body {
 	background: #1c1c1c;
 	color: #f4f4f0;
 }
+/* Day 18 预测画面的展开动画。 */
 .day18-overlay--enter {
 	clip-path: inset(49.5% 0 49.5% 0);
 	animation: day18Merge 1.1s ease forwards;
+}
+
+@keyframes day18Merge {
+	0% {
+		clip-path: inset(49.5% 0 49.5% 0);
+	}
+
+	100% {
+		clip-path: inset(0 0 0 0);
+	}
 }
 .day18-title {
 	font-family: 'Press Start 2P', monospace;
@@ -1051,6 +1062,8 @@ body {
 .slow-reveal.delay3 { animation-delay: 3.4s; }
 
 
+/* 临时停用数据雨、液体背景与一体式终端；改成 @media all 即可恢复。 */
+@media not all {
 /* ============================== CEILLIAN 液体数据雨背景：Day 1 白灰，Day 18 黑白 ========================= */
 
 :root {
@@ -1342,9 +1355,9 @@ body.ceillian-night #ceillian-data-rain {
 /* 侧栏已不再需要 SugarCube 原本的收起按钮。 */
 #ceillian-shell #ui-bar-toggle {
 	display: none !important;
+ }
+
 }
-
-
 .ending-line{
 	margin-top: 1em;
 	font-weight: 700;
@@ -1363,13 +1376,52 @@ setup.shopHistoryRate = function () { return State.variables.shopHistoryShared ?
 setup.shopPrice = function (base) { return Math.ceil(base * setup.shopHistoryRate()); };
 
  /* 手动刷新左侧状态栏:上传/购买后当场重画侧栏,不用等翻页 */
-setup.refreshCaption = function () {
-	var p = Story.get("StoryCaption");
-	if (!p) return;
-	var txt = (typeof p.processText === "function") ? p.processText() : p.text;
-	$("#story-caption").empty().wiki(txt);
+/* 将当前理智限制在 0 到理智上限之间。 */
+setup.clampSanity = function () {
+	var sanity = Number(State.variables.sanity);
+	var sanityMax = Number(State.variables.sanityMax);
+
+	/* 缺少有效理智上限时使用默认值 100。 */
+	if (!Number.isFinite(sanityMax)) {
+		sanityMax = 100;
+	}
+
+	/* 缺少有效理智值时恢复至当前上限。 */
+	if (!Number.isFinite(sanity)) {
+		sanity = sanityMax;
+	}
+
+	State.variables.sanityMax = Math.max(0, sanityMax);
+	State.variables.sanity = Math.max(
+		0,
+		Math.min(State.variables.sanityMax, sanity)
+	);
 };
 
+/* 刷新侧栏前先修正理智，防止显示超过最大值。 */
+setup.refreshCaption = function () {
+	var passage;
+	var text;
+
+	setup.clampSanity();
+
+	passage = Story.get("StoryCaption");
+
+	if (!passage) {
+		return;
+	}
+
+	text = typeof passage.processText === "function"
+		? passage.processText()
+		: passage.text;
+
+	$("#story-caption").empty().wiki(text);
+};
+
+/* 每次进入新 passage 后再次检查理智上限。 */
+$(document).on(":passagedisplay", function () {
+	setup.refreshCaption();
+});
 /* 打字开始→锁出口;打字全部完成→放行;换段时安全复位 */
 $(document).on(':typingcomplete', function () {
 	$('.type-link').addClass('shown');
@@ -1495,8 +1547,8 @@ setup.shopItems = {
 	/* --- Level Ⅱ --- */
 	veg:     { name:"🥗 Organic Vegetable Box", desc:"Every tomato has its own growing history.",               price:25, effect:"Hunger +3",  hunger:3,  rank:2 },
     protein: { name:"🥫 Protein Can",      desc:"Please don't ask what kind of meat it contains.",              price:18, effect:"Hunger +2",  hunger:2,  rank:2 },
-	coffee:  { name:"☕ Instant Coffee MAX",    desc:"You'll feel productive for at least two hours.",          price:20, effect:"Sanity +20", sanity:20, rank:2 },
-	candy:   { name:"🍬 Anxiety Candy",         desc:"A heavy, soothing chew with the classic blackcurrant texture. Recommended for citizens just like you.", price:20, effect:"Sanity +20", sanity:20, rank:2 },
+	coffee:  { name:"☕ Instant Coffee MAX",    desc:"You'll feel productive for at least two hours.",          price:12, effect:"Sanity +20", sanity:20, rank:2 },
+	candy:   { name:"🍬 Anxiety Candy",         desc:"A heavy, soothing chew with the classic blackcurrant texture. Recommended for citizens just like you.", price:12, effect:"Sanity +20", sanity:20, rank:2 },
 
 	/* --- Level Ⅲ --- */
 	beer:    { name:"🍄 Chanterelle Beer", desc:"Brewed from mushrooms growing along abandoned pipelines.", price:30, effect:"Hunger +3, Sanity +10", hunger:3, sanity:10, rank:3 },
@@ -1537,6 +1589,10 @@ setup.tomorrowPrediction = function () {
 setup.predictionProducts = ["Bubble Tea 🧃","Orange Soda 🍊","Anxiety Candy 🍬","Instant Coffee MAX ☕","Protein Can 🥫","Deep Sleep Capsule 💊","Synthetic Bread 🍞","Stream+ 📺"];
 
 /* ====================================创建并控制全屏数据雨。==================================== */
+/* 新界面总开关；false 为旧版左侧边栏，true 为数据雨一体式界面。 */
+setup.ceillianModernUIEnabled = false;
+
+if (setup.ceillianModernUIEnabled) {
 /* ===== CEILLIAN：液体背景、状态码数据雨与一体式终端 ===== */
 
 setup.ceillianDataRain = {
@@ -1827,7 +1883,8 @@ $(document).one(":storyready", function () {
 /* 每次进入新 passage 时读取当前 Day 并更新明暗。 */
 $(document).on(":passagedisplay", function () {
     setup.refreshDataRainTheme();
-});</script><tw-tag name="widget" color="purple"></tw-tag><tw-tag name="nobr" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryInit" tags="" position="575,150" size="100,100">
+});
+  }</script><tw-tag name="widget" color="purple"></tw-tag><tw-tag name="nobr" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryInit" tags="" position="575,150" size="100,100">
 /* ---------- 日程 ---------- */
 &lt;&lt;set $day to 1&gt;&gt;
 
@@ -1901,7 +1958,9 @@ $(document).on(":passagedisplay", function () {
 &lt;&lt;set $yakeyWorkplace to false&gt;&gt;  /* Day9是否启用Yakey Workplace */
 &lt;&lt;set $voiceAssistant to false&gt;&gt;   /* Day10语音助手授权(供后续回调) */
 &lt;&lt;set $day11Choice to &quot;&quot;&gt;&gt;
-&lt;&lt;set $day13Confirmed to false&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="StoryCaption" tags="" position="575,300" size="100,100">&lt;!-- 显示当前日数。 --&gt;
+&lt;&lt;set $day13Confirmed to false&gt;&gt;
+
+</tw-passagedata><tw-passagedata pid="2" name="StoryCaption" tags="" position="575,300" size="100,100">&lt;!-- 显示当前日数。 --&gt;
 &lt;div class=&quot;status-row&quot;&gt;Day &lt;&lt;print $day&gt;&gt;&lt;/div&gt;
 
 &lt;!-- 显示当前生命和缺失生命；Math.max 防止 repeat() 接收负数。 --&gt;
@@ -1930,9 +1989,9 @@ $(document).on(":passagedisplay", function () {
 
 &lt;!-- 删除数据入口只在 Day 11 解锁后显示。 --&gt;
 &lt;&lt;if $deleteUnlocked&gt;&gt;
-	[[□ Delete all my data?|DeleteData]]
+	[[□ Delete all  data?|DeleteData]]
 &lt;&lt;/if&gt;&gt;
-</tw-passagedata><tw-passagedata pid="3" name="Start" tags="nobr" position="775,225" size="100,100">/* Start：欢迎文字 + 规则书弹窗。 */
+</tw-passagedata><tw-passagedata pid="3" name="Start" tags="nobr" position="800,225" size="100,100">/* Start：欢迎文字 + 规则书弹窗。 */
 
 &lt;div class=&quot;start-welcome&quot;&gt;
 	&lt;h1&gt;Welcome to Ceillian.&lt;/h1&gt;
@@ -2116,7 +2175,7 @@ $(document).on(":passagedisplay", function () {
 &lt;h1&gt;Ending: No More Room to Endure&lt;/h1&gt;
 
 &lt;p&gt;
-	You ran out of hunger before the city ran out of advertisements.
+	You ran out of health before the city ran out of advertisements.
 &lt;/p&gt;
 
 &lt;p&gt;
@@ -2447,9 +2506,9 @@ $(document).on(":passagedisplay", function () {
 &lt;div id=&quot;pay-collect&quot;&gt;
 &lt;div class=&quot;paycheck&quot;&gt;
 &lt;&lt;link &quot;💳  +40 Coins  ·  Tap to collect&quot;&gt;&gt;
-&lt;&lt;set $money to $money + 40&gt;&gt;
 &lt;&lt;set $sanity to Math.max(0, $sanity - 45)&gt;&gt;
-&lt;&lt;set $lastWage to 40&gt;&gt;
+&lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
+&lt;&lt;set $lastWage to setup.dailyWage($day)&gt;&gt;
 &lt;&lt;set $hasWorkedToday to true&gt;&gt;
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
 &lt;&lt;replace &quot;#pay-collect&quot;&gt;&gt;
@@ -2478,7 +2537,7 @@ $(document).on(":passagedisplay", function () {
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
 &lt;h1&gt;Day 3 · Home&lt;/h1&gt;
 &lt;div class=&quot;home-line&quot;&gt;The car is warm.&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;You feel your fatigue from the day has somewhat lessened. —&lt;/div&gt;
+&lt;div class=&quot;home-line&quot;&gt;You feel your fatigue from the day has somewhat lessened. &lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;Sanity +10&lt;/span&gt;&lt;/div&gt;
 [[Go home-&gt;Home]]
 </tw-passagedata><tw-passagedata pid="23" name="Day3_Commute" tags="nobr" position="1525,550" size="100,100">/* Day 3 下班通勤选择；定位数据上传在交通工具选项之前。 */
@@ -2566,7 +2625,8 @@ You decide:
 &lt;h1&gt;End of Day 5&lt;/h1&gt;
 &lt;div id=&quot;pay-collect&quot;&gt;
 &lt;div class=&quot;paycheck&quot;&gt;
-&lt;&lt;link &quot;💳  +60 Coins  ·  Tap to collect&quot;&gt;&gt;
+&lt;&lt;set _payLabel to &quot;💳  +&quot; + setup.dailyWage($day) + &quot; Coins  ·  Tap to collect&quot;&gt;&gt;
+&lt;&lt;link _payLabel&gt;&gt;
 &lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
 &lt;&lt;set $sanity to Math.max(0, $sanity - setup.workSanity($day))&gt;&gt;
 &lt;&lt;set $lastWage to setup.dailyWage($day)&gt;&gt;
@@ -2685,18 +2745,26 @@ You decide:
 
 
 &lt;&lt;widget &quot;payday&quot;&gt;&gt;
+	/* 传入工资时使用特殊工资，否则调用统一工资函数。 */
 	&lt;&lt;if $args.length &gt; 0&gt;&gt;
-		&lt;&lt;set _wage to $args[0]&gt;&gt;          /* ① 一次性特殊：传参优先 */
-	&lt;&lt;elseif $day gte 8&gt;&gt;
-		&lt;&lt;set _wage to 40&gt;&gt;               /* ② 永久减薪：Day8起固定（数值随便改） */
+		&lt;&lt;set _wage to $args[0]&gt;&gt;
 	&lt;&lt;else&gt;&gt;
-		&lt;&lt;set _wage to 60&gt;&gt;              /* 基础工资（数值随便改） */
+		&lt;&lt;set _wage to setup.dailyWage($day)&gt;&gt;
 	&lt;&lt;/if&gt;&gt;
-	&lt;&lt;set _sanCost to $args.length &gt; 1 ? $args[1] : 40&gt;&gt;
+
+	/* 第二个参数可覆盖理智消耗，默认使用当天工作理智消耗。 */
+	&lt;&lt;if $args.length &gt; 1&gt;&gt;
+		&lt;&lt;set _sanCost to $args[1]&gt;&gt;
+	&lt;&lt;else&gt;&gt;
+		&lt;&lt;set _sanCost to setup.workSanity($day)&gt;&gt;
+	&lt;&lt;/if&gt;&gt;
+
 	&lt;&lt;set $money to $money + _wage&gt;&gt;
 	&lt;&lt;set $sanity to Math.max(0, $sanity - _sanCost)&gt;&gt;
+	&lt;&lt;set $lastWage to _wage&gt;&gt;
 	&lt;&lt;set $hasWorkedToday to true&gt;&gt;
 &lt;&lt;/widget&gt;&gt;
+
 
 &lt;&lt;widget &quot;upload&quot;&gt;&gt;
 	&lt;&lt;set $ceillianPoints to $ceillianPoints + $args[0]&gt;&gt;
@@ -2762,13 +2830,13 @@ You decide:
 &lt;div id=&quot;pay-collect&quot;&gt;
 &lt;div class=&quot;paycheck&quot;&gt;
 &lt;&lt;link &quot;💳  +40 Coins  ·  Tap to collect&quot;&gt;&gt;
-&lt;&lt;set $money to $money + 40&gt;&gt;
 &lt;&lt;set $sanity to Math.max(0, $sanity - 40)&gt;&gt;
-&lt;&lt;set $lastWage to 60&gt;&gt;
+&lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
+&lt;&lt;set $lastWage to setup.dailyWage($day)&gt;&gt;
 &lt;&lt;set $hasWorkedToday to true&gt;&gt;
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
 &lt;&lt;replace &quot;#pay-collect&quot;&gt;&gt;
-&lt;div class=&quot;paycheck collected&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;+40 Coins · Sanity −40.  Balance: 💳 &lt;&lt;print $money&gt;&gt;&lt;/span&gt;&lt;/div&gt;
+&lt;div class=&quot;paycheck collected&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;+40 Coins · Sanity −40 (work).  Balance: 💳 &lt;&lt;print $money&gt;&gt;&lt;/span&gt;&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;As you&#39;re about to put your phone away, it vibrates.&lt;/div&gt;
 &lt;div class=&quot;reveal-link&quot;&gt;[[Open notification-&gt;Day1_Pedometer]]&lt;/div&gt;
 &lt;&lt;/replace&gt;&gt;
@@ -2814,9 +2882,9 @@ You decide:
 &lt;div id=&quot;pay-collect&quot;&gt;
 &lt;div class=&quot;paycheck&quot;&gt;
 &lt;&lt;link &quot;💳  +40 Coins  ·  Tap to collect&quot;&gt;&gt;
-&lt;&lt;set $money to $money + 40&gt;&gt;
 &lt;&lt;set $sanity to Math.max(0, $sanity - 40)&gt;&gt;
-&lt;&lt;set $lastWage to 40&gt;&gt;
+&lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
+&lt;&lt;set $lastWage to setup.dailyWage($day)&gt;&gt;
 &lt;&lt;set $hasWorkedToday to true&gt;&gt;
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
 &lt;&lt;replace &quot;#pay-collect&quot;&gt;&gt;
@@ -2879,48 +2947,50 @@ You decide:
 </tw-passagedata><tw-passagedata pid="41" name="Day4_ToWork" tags="nobr" position="1900,400" size="100,100">/* 黑屏工作转场 5 秒；工资与工作理智消耗统一在班后结算 */
 &lt;div class=&quot;work-screen&quot;&gt;&lt;div class=&quot;work-text&quot;&gt;WORKING...&lt;/div&gt;&lt;/div&gt;
 &lt;&lt;timed 5s&gt;&gt;&lt;&lt;goto &quot;Day4_AfterWork&quot;&gt;&gt;&lt;&lt;/timed&gt;&gt;
-</tw-passagedata><tw-passagedata pid="42" name="Day4_AfterWork" tags="nobr" position="1900,525" size="100,100">/* Day4是工作日：领薪卡 + 工作理智扣除(周末自动0) */
+</tw-passagedata><tw-passagedata pid="42" name="Day4_AfterWork" tags="nobr" position="1900,525" size="100,100">/* Day 4 工作结算；使用 hasWorkedToday 防止重复领取工资。 */
 &lt;h1&gt;After Work&lt;/h1&gt;
+
 &lt;div id=&quot;pay-collect&quot;&gt;
-&lt;div class=&quot;paycheck&quot;&gt;
-&lt;&lt;link &quot;💳  +40 Coins  ·  Tap to collect&quot;&gt;&gt;
-&lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
-&lt;&lt;set $sanity to Math.max(0, $sanity - setup.workSanity($day))&gt;&gt;
-&lt;&lt;set $lastWage to setup.dailyWage($day)&gt;&gt;
-&lt;&lt;set $hasWorkedToday to true&gt;&gt;
-&lt;&lt;run setup.refreshCaption()&gt;&gt;
-&lt;&lt;replace &quot;#pay-collect&quot;&gt;&gt;
-&lt;div class=&quot;paycheck collected&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;+&lt;&lt;print $lastWage&gt;&gt; Coins · Sanity −40 (work).  Balance: 💳 &lt;&lt;print $money&gt;&gt;&lt;/span&gt;&lt;/div&gt;
-&lt;div class=&quot;reveal-link&quot;&gt;[[Continue-&gt;Day4_BirthdayReminder]]&lt;/div&gt;
-&lt;&lt;/replace&gt;&gt;
-&lt;&lt;/link&gt;&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;After work, you head home.&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;Then you remember—&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;&lt;strong&gt;It&#39;s your mom&#39;s birthday today.&lt;/strong&gt;&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;She sent you a message earlier asking you to come for dinner.&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;You still have one hour before the dinner begins.&lt;/div&gt;
+	&lt;&lt;if !$hasWorkedToday&gt;&gt;
+		&lt;div class=&quot;paycheck&quot;&gt;
+			&lt;&lt;set _payLabel to &quot;💳  +&quot; + setup.dailyWage($day) + &quot; Coins  ·  Tap to collect&quot;&gt;&gt;
 
-&lt;div class=&quot;home-line&quot;&gt;Would you like to bring her a gift?&lt;/div&gt;
+			&lt;&lt;link _payLabel&gt;&gt;
+				/* 点击时再次检查，防止重复按钮或连续点击导致多次领取。 */
+				&lt;&lt;if !$hasWorkedToday&gt;&gt;
+					&lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
+					&lt;&lt;set $sanity to Math.max(0, $sanity - setup.workSanity($day))&gt;&gt;
+					&lt;&lt;set $lastWage to setup.dailyWage($day)&gt;&gt;
+					&lt;&lt;set $hasWorkedToday to true&gt;&gt;
+					&lt;&lt;run setup.refreshCaption()&gt;&gt;
+				&lt;&lt;/if&gt;&gt;
 
-/* 礼物选项：A/B 需扣币，买不起则灰显不可点；C 免费 */
-&lt;div class=&quot;choice-block&quot;&gt;
-&lt;&lt;if $money gte 35&gt;&gt;
-[[A. Buy a silk scarf in her favourite colour. (35 coins)-&gt;Day4_GiftScarf]]
-&lt;&lt;else&gt;&gt;
-&lt;span class=&quot;choice-disabled&quot;&gt;A. Buy a silk scarf in her favourite colour. (need 35 coins)&lt;/span&gt;
-&lt;&lt;/if&gt;&gt;
-&lt;br&gt;
-&lt;&lt;if $money gte 15&gt;&gt;
-[[B. Buy a small potted plant. (15 coins)-&gt;Day4_GiftPlant]]
-&lt;&lt;else&gt;&gt;
-&lt;span class=&quot;choice-disabled&quot;&gt;B. Buy a small potted plant. (need 15 coins)&lt;/span&gt;
-&lt;&lt;/if&gt;&gt;
-&lt;br&gt;
-[[C. Go empty-handed. Just be there.-&gt;Day4_GiftNone]]
-&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="43" name="Day4_GiftNone" tags="nobr" position="2050,700" size="100,100">/* 选项C：空手赴约，无扣币，Sanity +10 */
+				&lt;&lt;replace &quot;#pay-collect&quot;&gt;&gt;
+					&lt;div class=&quot;paycheck collected&quot;&gt;
+						&lt;span class=&quot;system-text&quot;&gt;
+							+&lt;&lt;print $lastWage&gt;&gt; Coins · Sanity −40 (work). Balance: 💳 &lt;&lt;print $money&gt;&gt;
+						&lt;/span&gt;
+					&lt;/div&gt;
+
+					&lt;div class=&quot;reveal-link&quot;&gt;
+						[[Continue-&gt;Day4_BirthdayReminder]]
+					&lt;/div&gt;
+				&lt;&lt;/replace&gt;&gt;
+			&lt;&lt;/link&gt;&gt;
+		&lt;/div&gt;
+	&lt;&lt;else&gt;&gt;
+		/* 重新进入本 passage 时不再提供领取工资按钮。 */
+		&lt;div class=&quot;paycheck collected&quot;&gt;
+			&lt;span class=&quot;system-text&quot;&gt;
+				Today&#39;s salary has already been collected.
+			&lt;/span&gt;
+		&lt;/div&gt;
+
+		&lt;div class=&quot;reveal-link&quot;&gt;
+			[[Continue-&gt;Day4_BirthdayReminder]]
+		&lt;/div&gt;
+	&lt;&lt;/if&gt;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="43" name="Day4_GiftNone" tags="nobr" position="2050,700" size="100,100">/* 选项C：空手赴约，无扣币，Sanity +10 */
 &lt;&lt;set $sanity to Math.min(100, $sanity + 10)&gt;&gt;
 &lt;&lt;set $day4Gift to &quot;none&quot;&gt;&gt;
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
@@ -2976,10 +3046,10 @@ You decide:
 	&lt;&lt;run Engine.restart()&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
-</tw-passagedata><tw-passagedata pid="46" name="Day4_BirthdayReminder" tags="" position="1750,525" size="100,100"></tw-passagedata><tw-passagedata pid="47" name="Day5_ToWork" tags="nobr" position="2200,300" size="100,100">/* 黑屏工作转场5秒 */
+</tw-passagedata><tw-passagedata pid="46" name="Day5_ToWork" tags="nobr" position="2200,300" size="100,100">/* 黑屏工作转场5秒 */
 &lt;div class=&quot;work-screen&quot;&gt;&lt;div class=&quot;work-text&quot;&gt;WORKING...&lt;/div&gt;&lt;/div&gt;
 &lt;&lt;timed 5s&gt;&gt;&lt;&lt;goto &quot;Day5_Work&quot;&gt;&gt;&lt;&lt;/timed&gt;&gt;
-</tw-passagedata><tw-passagedata pid="48" name="Day5_HeartRate" tags="nobr" position="2200,575" size="100,100">/* Yakey心率监测授权:Yes后台+10公民积分(不显示台词,仅侧栏进度条动) */
+</tw-passagedata><tw-passagedata pid="47" name="Day5_HeartRate" tags="nobr" position="2200,575" size="100,100">/* Yakey心率监测授权:Yes后台+10公民积分(不显示台词,仅侧栏进度条动) */
 &lt;div class=&quot;home-line&quot;&gt;Back home, your phone lights up.&lt;/div&gt;
 
 &lt;div class=&quot;yakey-box&quot;&gt;
@@ -3010,7 +3080,7 @@ You decide:
 &lt;&lt;/link&gt;&gt;
 &lt;/div&gt;
 &lt;div id=&quot;hr-result&quot;&gt;&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="49" name="Day6_Morning" tags="nobr" position="2325,175" size="100,100">/* Day6周六:醒来看手机,弹出Yakey消费记录授权弹窗 */
+</tw-passagedata><tw-passagedata pid="48" name="Day6_Morning" tags="nobr" position="2325,175" size="100,100">/* Day6周六:醒来看手机,弹出Yakey消费记录授权弹窗 */
 &lt;h1&gt;Day 6&lt;/h1&gt;
 &lt;div class=&quot;home-line&quot;&gt;It&#39;s Saturday.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Out of habit, the first thing you do after waking up is reach for your phone.&lt;/div&gt;
@@ -3050,7 +3120,7 @@ You decide:
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="50" name="Day6_Parcel" tags="nobr" position="2325,300" size="100,100">/* 妈妈寄来橄榄包裹,Hunger+2 */
+</tw-passagedata><tw-passagedata pid="49" name="Day6_Parcel" tags="nobr" position="2325,300" size="100,100">/* 妈妈寄来橄榄包裹,Hunger+2 */
 &lt;div class=&quot;home-line&quot;&gt;A little later, someone knocks on your door.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;It&#39;s a small parcel from your mother.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Inside is a jar of homemade olives, wrapped carefully in newspaper.&lt;/div&gt;
@@ -3060,9 +3130,9 @@ You decide:
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;Hunger +2&lt;/span&gt;&lt;/div&gt;
 [[Continue-&gt;Home]]
-</tw-passagedata><tw-passagedata pid="51" name="Day7_Morning" tags="nobr" position="2500,200" size="100,100">/* Day7周日:起床先交房租,交完进公园 */
+</tw-passagedata><tw-passagedata pid="50" name="Day7_Morning" tags="nobr" position="2500,200" size="100,100">/* Day7周日:起床先交房租,交完进公园 */
 &lt;h1&gt;Day 7&lt;/h1&gt;
-&lt;&lt;rentnotice &quot;Day7_Park&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="52" name="Day7_Park" tags="nobr" position="2500,325" size="100,100">/* 公园晒太阳→回家途中邻居的狗走失:分段单击显示,末尾二选一 */
+&lt;&lt;rentnotice &quot;Day7_Park&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="51" name="Day7_Park" tags="nobr" position="2500,325" size="100,100">/* 公园晒太阳→回家途中邻居的狗走失:分段单击显示,末尾二选一 */
 &lt;div class=&quot;home-line&quot;&gt;It&#39;s the first sunny day in quite a while.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You spend the whole afternoon at the park, sitting on a bench and enjoying the warmth of the sun. Families are having picnics. Further off on the lawn, someone is playing a guitar.&lt;/div&gt;
 &lt;span class=&quot;seg-more&quot;&gt;&lt;&lt;linkappend &quot; ▽ &quot; &quot;fade&quot;&gt;&gt;
@@ -3076,14 +3146,14 @@ You decide:
 ▢ &lt;&lt;link &quot;Go home.&quot;&gt;&gt;&lt;&lt;set $day7Helped to false&gt;&gt;&lt;&lt;goto &quot;Day7_GoHome&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;/div&gt;
 &lt;&lt;/linkappend&gt;&gt;&lt;/span&gt;
-</tw-passagedata><tw-passagedata pid="53" name="Day7_Help" tags="nobr" position="2425,450" size="100,100">/* Help分支:找回狗,末尾[单击换一页]到晚上煎饼 */
+</tw-passagedata><tw-passagedata pid="52" name="Day7_Help" tags="nobr" position="2425,450" size="100,100">/* Help分支:找回狗,末尾[单击换一页]到晚上煎饼 */
 &lt;div class=&quot;home-line&quot;&gt;You spend nearly half an hour searching nearby streets.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Just as you&#39;re about to give up, you hear barking behind a row of parked bicycles.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;The dog runs straight back into your neighbour&#39;s arms.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&quot;I thought I&#39;d lost him.&quot;&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;He lets out a long breath, and thanked you with sincerity.&lt;/div&gt;
 &lt;div class=&quot;reveal-link&quot;&gt;[[Continue-&gt;Day7_Pancakes]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="54" name="Day7_Pancakes" tags="nobr" position="2500,575" size="100,100">/* 晚上邻居送煎饼:Hunger+1 Sanity+15 */
+</tw-passagedata><tw-passagedata pid="53" name="Day7_Pancakes" tags="nobr" position="2500,575" size="100,100">/* 晚上邻居送煎饼:Hunger+1 Sanity+15 */
 &lt;div class=&quot;home-line&quot;&gt;It&#39;s evening. You are at home when someone knocks on your door.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;It&#39;s your neighbour, holding a small paper bag.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&quot;I made too many today.&quot;&lt;/div&gt;
@@ -3094,25 +3164,25 @@ You decide:
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;Hunger +1 · Sanity +15&lt;/span&gt;&lt;/div&gt;
 &lt;div class=&quot;reveal-link&quot;&gt;[[Continue-&gt;Day7_Phone]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="55" name="Day7_Phone" tags="nobr" position="2500,700" size="100,100">&lt;div id=&quot;renew-action&quot; class=&quot;choice-block&quot;&gt;
-/* 续费判定:够20币则续费;不够则跳无钱结局(付不起话费=生存危机) */
-&lt;&lt;if $money gte 20&gt;&gt;
-&lt;&lt;link &quot;▢ Renew your mobile plan. (−20 Coins)&quot;&gt;&gt;
-&lt;&lt;set $money to $money - 20&gt;&gt;
+</tw-passagedata><tw-passagedata pid="54" name="Day7_Phone" tags="nobr" position="2500,700" size="100,100">&lt;div id=&quot;renew-action&quot; class=&quot;choice-block&quot;&gt;
+/* 续费判定:够5币则续费;不够则跳无钱结局(付不起话费=生存危机) */
+&lt;&lt;if $money gte 5&gt;&gt;
+&lt;&lt;link &quot;▢ Renew your mobile plan. (−5 Coins)&quot;&gt;&gt;
+&lt;&lt;set $money to $money - 5&gt;&gt;
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
-&lt;&lt;replace &quot;#renew-action&quot;&gt;&gt;&lt;span class=&quot;system-text&quot;&gt;Plan renewed. −20 Coins.&lt;/span&gt;&lt;br&gt;&lt;div class=&quot;reveal-link&quot;&gt;[[Go to sleep-&gt;Sleep]]&lt;/div&gt;&lt;&lt;/replace&gt;&gt;
+&lt;&lt;replace &quot;#renew-action&quot;&gt;&gt;&lt;span class=&quot;system-text&quot;&gt;Plan renewed. −5 Coins.&lt;/span&gt;&lt;br&gt;&lt;div class=&quot;reveal-link&quot;&gt;[[Go to sleep-&gt;Sleep]]&lt;/div&gt;&lt;&lt;/replace&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 &lt;&lt;else&gt;&gt;
-&lt;&lt;link &quot;▢ Renew your mobile plan. (−20 Coins)&quot;&gt;&gt;
+&lt;&lt;link &quot;▢ Renew your mobile plan. (−5 Coins)&quot;&gt;&gt;
 &lt;&lt;goto &quot;Ending_NoMoney&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;
-&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="56" name="Day7_GoHome" tags="nobr" position="2575,450" size="100,100">/* GoHome分支:不帮找狗,无奖励,走廊安静,直接接续费剧情 */
+&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="55" name="Day7_GoHome" tags="nobr" position="2575,450" size="100,100">/* GoHome分支:不帮找狗,无奖励,走廊安静,直接接续费剧情 */
 &lt;div class=&quot;home-line&quot;&gt;You hesitate for a moment, then continue walking.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;It&#39;s probably not a big deal.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Besides, you have more important things to worry about.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;That night, the corridor outside your apartment is unusually quiet.&lt;/div&gt;
 &lt;div class=&quot;reveal-link&quot;&gt;[[Continue-&gt;Day7_Phone]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="57" name="Day8_Ad" tags="nobr" position="2700,200" size="100,100">/* Day8开场:Yakey Connect广告弹窗,自动弹出,关闭后去上班 */
+</tw-passagedata><tw-passagedata pid="56" name="Day8_Ad" tags="nobr" position="2700,200" size="100,100">/* Day8开场:Yakey Connect广告弹窗,自动弹出,关闭后去上班 */
 &lt;h1&gt;Day 8&lt;/h1&gt;
 	/* 早晨：可购物或上班。 */
 		&lt;div class=&quot;home-line&quot;&gt;
@@ -3136,17 +3206,18 @@ You decide:
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;&lt;timed 0.1s&gt;&gt;&lt;&lt;run jQuery(&quot;#ad-overlay&quot;).addClass(&quot;is-open&quot;)&gt;&gt;&lt;&lt;/timed&gt;&gt;
-&lt;div class=&quot;reveal-link&quot;&gt;[[Go to work-&gt;Day8_ToWork]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="58" name="Day8_ToWork" tags="nobr" position="2700,325" size="100,100">/* 黑屏工作转场5秒 */
+&lt;div class=&quot;reveal-link&quot;&gt;[[Go to work-&gt;Day8_ToWork]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="57" name="Day8_ToWork" tags="nobr" position="2700,325" size="100,100">/* 黑屏工作转场5秒 */
 &lt;div class=&quot;work-screen&quot;&gt;&lt;div class=&quot;work-text&quot;&gt;WORKING...&lt;/div&gt;&lt;/div&gt;
 &lt;&lt;timed 5s&gt;&gt;&lt;&lt;goto &quot;Day8_PayCut&quot;&gt;&gt;&lt;&lt;/timed&gt;&gt;
-</tw-passagedata><tw-passagedata pid="59" name="Day8_PayCut" tags="nobr" position="2700,450" size="100,100">/* Day8减薪日:领薪卡动态取值=40(dailyWage在day&gt;=8返回40),工作理智-40 */
+</tw-passagedata><tw-passagedata pid="58" name="Day8_PayCut" tags="nobr" position="2700,450" size="100,100">/* Day8减薪日:领薪卡动态取值=40(dailyWage在day&gt;=8返回40),工作理智-40 */
 &lt;h1&gt;End of Day 8&lt;/h1&gt;
 &lt;div class=&quot;home-line&quot;&gt;It&#39;s a brutal day for you.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Your manager announced a pay cut before everyone left the office.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;The thing keeps replaying in your head.&lt;/div&gt;
 &lt;div id=&quot;pay-collect&quot;&gt;
 &lt;div class=&quot;paycheck&quot;&gt;
-&lt;&lt;link &quot;💳  +40 Coins  ·  Tap to collect&quot;&gt;&gt;
+&lt;&lt;set _payLabel to &quot;💳  +&quot; + setup.dailyWage($day) + &quot; Coins  ·  Tap to collect&quot;&gt;&gt;
+&lt;&lt;link _payLabel&gt;&gt;
 &lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
 &lt;&lt;set $sanity to Math.max(0, $sanity - setup.workSanity($day))&gt;&gt;
 &lt;&lt;set $lastWage to setup.dailyWage($day)&gt;&gt;
@@ -3159,7 +3230,7 @@ You decide:
 &lt;&lt;/link&gt;&gt;
 &lt;/div&gt;
 &lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="60" name="Day8_Home" tags="nobr" position="2700,575" size="100,100">/* 分段:点任意处继续,用linkreplace(点后链接消失),包裹span便于CSS选中 */
+</tw-passagedata><tw-passagedata pid="59" name="Day8_Home" tags="nobr" position="2700,575" size="100,100">/* 分段:点任意处继续,用linkreplace(点后链接消失),包裹span便于CSS选中 */
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;Back home,&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You feel lonely.&lt;/div&gt;
@@ -3172,7 +3243,7 @@ You decide:
 &lt;div class=&quot;home-line&quot;&gt;You think to yourself.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;At the same time, your phone lights up.&lt;/div&gt;
 &lt;div class=&quot;reveal-link&quot;&gt;[[Look at your phone-&gt;Day8_Chicken]]&lt;/div&gt;
-&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="61" name="Day8_Chicken" tags="nobr" position="2700,700" size="100,100">/* 炸鸡限时弹窗:15秒倒计时,归零则弹窗淡出并自动按&quot;无视&quot;处理 */
+&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="60" name="Day8_Chicken" tags="nobr" position="2700,700" size="100,100">/* 炸鸡限时弹窗:15秒倒计时,归零则弹窗淡出并自动按&quot;无视&quot;处理 */
 &lt;div class=&quot;home-line&quot;&gt;Your phone screen fills with a bright banner.&lt;/div&gt;
 
 &lt;div id=&quot;chicken-overlay&quot; class=&quot;ad-overlay&quot;&gt;
@@ -3200,7 +3271,7 @@ You decide:
 &lt;&lt;timed 0.5s&gt;&gt;&lt;&lt;run jQuery(&quot;#chicken-overlay&quot;).addClass(&quot;is-open&quot;)&gt;&gt;&lt;&lt;/timed&gt;&gt;
 
 /* 每秒递减;归零直接跳无视分支(去掉stop,否则goto不执行) */
-&lt;&lt;set $chickenTimer to 12&gt;&gt;
+&lt;&lt;set $chickenTimer to 15&gt;&gt;
 &lt;&lt;repeat 1s&gt;&gt;
 &lt;&lt;set $chickenTimer to $chickenTimer - 1&gt;&gt;
 &lt;&lt;if $chickenTimer lte 0&gt;&gt;
@@ -3209,7 +3280,7 @@ You decide:
 &lt;&lt;replace &quot;#cd&quot;&gt;&gt;&lt;&lt;print $chickenTimer&gt;&gt;&lt;&lt;/replace&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/repeat&gt;&gt;
-</tw-passagedata><tw-passagedata pid="62" name="Day8_Order" tags="nobr" position="2650,825" size="100,100">/* 下单:-15币,+20理智,+2饥饿;末尾汇入朋友通知(总) */
+</tw-passagedata><tw-passagedata pid="61" name="Day8_Order" tags="nobr" position="2650,825" size="100,100">/* 下单:-15币,+20理智,+2饥饿;末尾汇入朋友通知(总) */
 &lt;&lt;set $money to $money - 15&gt;&gt;
 &lt;&lt;set $sanity to Math.min(100, $sanity + 20)&gt;&gt;
 &lt;&lt;set $hunger to Math.min($hungerMax, $hunger + 2)&gt;&gt;
@@ -3221,7 +3292,7 @@ You decide:
 &lt;div class=&quot;home-line&quot;&gt;Still, you feel a bit weird being guessed right.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;Sanity +20 · Hunger +2&lt;/span&gt;&lt;/div&gt;
 &lt;div class=&quot;reveal-link&quot;&gt;[[Continue-&gt;Day8_Friend]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="63" name="Day8_Friend" tags="nobr" position="2725,950" size="100,100">/* 朋友通知(总分总的总):Day1式聊天每句1.5s,末尾Join/No */
+</tw-passagedata><tw-passagedata pid="62" name="Day8_Friend" tags="nobr" position="2725,950" size="100,100">/* 朋友通知(总分总的总):Day1式聊天每句1.5s,末尾Join/No */
 &lt;div class=&quot;home-line&quot;&gt;A notification pops up.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;It&#39;s from your friend.&lt;/div&gt;
 &lt;div class=&quot;phone-chat&quot;&gt;
@@ -3264,80 +3335,89 @@ You decide:
 &lt;div id=&quot;friend-result&quot;&gt;&lt;/div&gt;
 &lt;&lt;/timed&gt;&gt;
 &lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="64" name="Day8_Ignore" tags="nobr" position="2775,825" size="100,100">/* 无视:自己做饭,末尾汇入朋友通知(总);倒计时归零也进这里 */
+</tw-passagedata><tw-passagedata pid="63" name="Day8_Ignore" tags="nobr" position="2775,825" size="100,100">/* 无视:自己做饭,末尾汇入朋友通知(总);倒计时归零也进这里 */
 &lt;div class=&quot;home-line&quot;&gt;You ignore it.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;After a moment of reluctance, you decide to make yourself something simple.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;It isn&#39;t particularly satisfying.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;But it&#39;ll do.&lt;/div&gt;
 &lt;div class=&quot;reveal-link&quot;&gt;[[Continue-&gt;Day8_Friend]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="65" name="Debug" tags="" position="2450,50" size="100,100">/* ========== 调试跳转:改数值+末尾goto,再点&quot;从这里测试&quot; ========== */
+</tw-passagedata><tw-passagedata pid="64" name="Debug" tags="" position="2450,50" size="100,100">/* ========== Day 15 至 Day 18 连续剧情测试 ========== */
 
-/* —— 【常改】想测的场景 —— */
-&lt;&lt;set $day to 5&gt;&gt;             /* ← 改成x,和Day X剧情对齐 */
+/* 当前测试日期。 */
+&lt;&lt;set $day to 15&gt;&gt;
+
+/* 为连续测试提供充足资源。 */
 &lt;&lt;set $money to 300&gt;&gt;
-&lt;&lt;set $sanity to 80&gt;&gt;
-&lt;&lt;set $ceillianPoints to 85&gt;&gt;
-
-
-/* —— 核心生存数值 —— */
-&lt;&lt;set $hunger to 3&gt;&gt;
+&lt;&lt;set $hunger to 5&gt;&gt;
 &lt;&lt;set $hungerMax to 5&gt;&gt;
 &lt;&lt;set $health to 3&gt;&gt;
 &lt;&lt;set $healthMax to 3&gt;&gt;
-&lt;&lt;set $sanityMax to 100&gt;&gt;
 
-/* —— 经济与房租 —— */
-&lt;&lt;set $rentAmount to 60&gt;&gt;
-&lt;&lt;set $daysUntilRent to 3&gt;&gt;
-&lt;&lt;set $priceMultiplier to 1&gt;&gt;
+/* 调试专用高理智，防止连续工作在 Day 17 前触发崩溃结局。 */
+&lt;&lt;set $sanityMax to 200&gt;&gt;
+&lt;&lt;set $sanity to 200&gt;&gt;
+
+/* 使用当前等级门槛时，95 点为 Rank IV。 */
+&lt;&lt;set $ceillianPoints to 95&gt;&gt;
+
+/* Day 13 交租后，Day 15 剩余一天。 */
+&lt;&lt;set $rentAmount to 30&gt;&gt;
+&lt;&lt;set $daysUntilRent to 1&gt;&gt;
+&lt;&lt;set $priceMultiplier to 1.05&gt;&gt;
 &lt;&lt;set $rentNext to &quot;&quot;&gt;&gt;
 
-/* —— 每日防重复标记 —— */
+/* 每日状态由 NextDay 在后续日期自动重置。 */
 &lt;&lt;set $hasWorkedToday to false&gt;&gt;
 &lt;&lt;set $hasUploadedToday to false&gt;&gt;
 &lt;&lt;set $taxiDiscountActive to false&gt;&gt;
 &lt;&lt;set $boughtToday to []&gt;&gt;
 &lt;&lt;set $offlineToday to false&gt;&gt;
 
-/* —— 商店/工资 —— */
-&lt;&lt;set $lastWage to 40&gt;&gt;
+/* 商店与工资状态。 */
+&lt;&lt;set $lastWage to 30&gt;&gt;
 &lt;&lt;set $shopMessage to &quot;&quot;&gt;&gt;
 &lt;&lt;set $shopItem to &quot;&quot;&gt;&gt;
 &lt;&lt;set $shopHistoryShared to true&gt;&gt;
+&lt;&lt;set $ownedItems to []&gt;&gt;
 &lt;&lt;set $chickenTimer to 15&gt;&gt;
 
-/* —— 剧情分支标记 —— */
+/* 前期剧情已经发生的状态。 */
+&lt;&lt;set $yakeyInstalled to true&gt;&gt;
 &lt;&lt;set $sleepDataShared to true&gt;&gt;
 &lt;&lt;set $day4Gift to &quot;scarf&quot;&gt;&gt;
-&lt;&lt;set $shortVideoEnabled to false&gt;&gt;
+&lt;&lt;set $shortVideoEnabled to true&gt;&gt;
 &lt;&lt;set $day7Helped to true&gt;&gt;
-&lt;&lt;set $joinedYakeyConnect to false&gt;&gt;
+&lt;&lt;set $joinedYakeyConnect to true&gt;&gt;
+&lt;&lt;set $day9OnTime to true&gt;&gt;
+&lt;&lt;set $yakeyWorkplace to true&gt;&gt;
+&lt;&lt;set $voiceAssistant to true&gt;&gt;
+&lt;&lt;set $day11Choice to &quot;work&quot;&gt;&gt;
+&lt;&lt;set $day13Confirmed to true&gt;&gt;
 
-/* —— Yakey/一次性剧情 —— */
+/* Yakey 与一次性事件状态。 */
 &lt;&lt;set $yakeyRefused to false&gt;&gt;
 &lt;&lt;set $fireDay to 0&gt;&gt;
-&lt;&lt;set $seenDay6 to false&gt;&gt;
-&lt;&lt;set $seenDay9 to false&gt;&gt;
-&lt;&lt;set $seenDay11 to false&gt;&gt;
+&lt;&lt;set $seenDay6 to true&gt;&gt;
+&lt;&lt;set $seenDay9 to true&gt;&gt;
+&lt;&lt;set $seenDay11 to true&gt;&gt;
 &lt;&lt;set $seenDay15 to false&gt;&gt;
-&lt;&lt;set $deleteUnlocked to false&gt;&gt;
+&lt;&lt;set $deleteUnlocked to true&gt;&gt;
 
-/* —— NPC/统计 —— */
+/* NPC、统计与成就状态。 */
 &lt;&lt;set $neighborPhase to 0&gt;&gt;
 &lt;&lt;set $friendPhase to 0&gt;&gt;
 &lt;&lt;set $refuseUploadCount to 0&gt;&gt;
 &lt;&lt;set $achievements to []&gt;&gt;
 
-/* —— 【常改】跳到目标段落 —— */
-&lt;&lt;goto &quot;Day2_Morning&quot;&gt;&gt;
-</tw-passagedata><tw-passagedata pid="66" name="Day9_Start" tags="nobr" position="2850,200" size="100,100">/* Day9开场 */
+/* 正式进入 Day 15，并从此处按正常睡眠流程推进日期。 */
+&lt;&lt;goto &quot;Day18_Start&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="65" name="Day9_Start" tags="nobr" position="2850,200" size="100,100">/* Day9开场 */
 &lt;h1&gt;Day 9&lt;/h1&gt;
 	/* 早晨：可购物或上班。 */
 		&lt;div class=&quot;home-line&quot;&gt;
 			It&#39;s 7:50 AM. You should leave soon.
 		&lt;/div&gt;
 
-[[Go out-&gt;Day9_Walk]]</tw-passagedata><tw-passagedata pid="67" name="Day9_Walk" tags="nobr" position="2850,325" size="100,100">/* 出门:狗摇尾/街角制服人员;Yakey推荐Bus B,选择影响工资 */
+[[Go out-&gt;Day9_Walk]]</tw-passagedata><tw-passagedata pid="66" name="Day9_Walk" tags="nobr" position="2850,325" size="100,100">/* 出门:狗摇尾/街角制服人员;Yakey推荐Bus B,选择影响工资 */
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You leave home.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Your neighbour is already outside.&lt;/div&gt;
@@ -3365,11 +3445,11 @@ You decide:
 ▢ &lt;&lt;link &quot;Ignore it. That&#39;s not the bus you usually take.&quot;&gt;&gt;&lt;&lt;set $day9OnTime to false&gt;&gt;&lt;&lt;goto &quot;Day9_Ignore&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;/div&gt;
 &lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;
-&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="68" name="Day9_Follow" tags="nobr" position="2850,450" size="100,100">/* 听从:准时到岗,正常发工资 */
+&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="67" name="Day9_Follow" tags="nobr" position="2850,450" size="100,100">/* 听从:准时到岗,正常发工资 */
 &lt;div class=&quot;home-line&quot;&gt;You decide to give it a try and take a new route to work.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;It&#39;s a slight detour, but you still make it to work on time.&lt;/div&gt;
 &lt;div class=&quot;reveal-link&quot;&gt;[[Continue-&gt;Day9_Email]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="69" name="Day9_Email" tags="nobr" position="2850,575" size="100,100">/* 到岗:HR邮件宣布Yakey Workplace,邮件内嵌广告样式 */
+</tw-passagedata><tw-passagedata pid="68" name="Day9_Email" tags="nobr" position="2850,575" size="100,100">/* 到岗:HR邮件宣布Yakey Workplace,邮件内嵌广告样式 */
 &lt;div class=&quot;home-line&quot;&gt;You arrive at work as usual.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;After turning on your computer, you notice a new email from &lt;strong&gt;Human Resources&lt;/strong&gt;.&lt;/div&gt;
 
@@ -3400,16 +3480,16 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;&lt;replace &quot;#workplace-choice&quot;&gt;&gt;&lt;span class=&quot;home-soft&quot;&gt;You close the email.&lt;/span&gt;&lt;br&gt;&lt;div class=&quot;reveal-link&quot;&gt;[[Start working-&gt;Day9_ToWork]]&lt;/div&gt;&lt;&lt;/replace&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 &lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="70" name="Day9_Ignore" tags="nobr" position="2975,450" size="100,100">/* 无视:堵车迟到,当天无工资(仍上班扣理智) */
+</tw-passagedata><tw-passagedata pid="69" name="Day9_Ignore" tags="nobr" position="2975,450" size="100,100">/* 无视:堵车迟到,当天无工资(仍上班扣理智) */
 &lt;div class=&quot;home-line&quot;&gt;You stay at the stop and hop on your regular bus when it arrives.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Twenty minutes later, traffic comes to a complete standstill.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;By the time you reach the office, you&#39;re over half an hour late.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;That is, &lt;strong&gt;you won&#39;t be paid for today.&lt;/strong&gt;&lt;/div&gt;
 &lt;div class=&quot;reveal-link&quot;&gt;[[Continue-&gt;Day9_Email]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="71" name="Day9_ToWork" tags="nobr" position="2900,700" size="100,100">/* 黑屏工作转场5秒 */
+</tw-passagedata><tw-passagedata pid="70" name="Day9_ToWork" tags="nobr" position="2900,700" size="100,100">/* 黑屏工作转场5秒 */
 &lt;div class=&quot;work-screen&quot;&gt;&lt;div class=&quot;work-text&quot;&gt;WORKING...&lt;/div&gt;&lt;/div&gt;
 &lt;&lt;timed 5s&gt;&gt;&lt;&lt;goto &quot;Day9_Lunch&quot;&gt;&gt;&lt;&lt;/timed&gt;&gt;
-</tw-passagedata><tw-passagedata pid="72" name="Day9_Lunch" tags="nobr" position="2925,825" size="100,100">/* 结算:准时发工资,迟到无工资;均扣工作理智-40 */
+</tw-passagedata><tw-passagedata pid="71" name="Day9_Lunch" tags="nobr" position="2925,825" size="100,100">/* 结算:准时发工资,迟到无工资;均扣工作理智-40 */
 &lt;&lt;if not $hasWorkedToday&gt;&gt;
 &lt;&lt;set $sanity to Math.max(0, $sanity - setup.workSanity($day))&gt;&gt;
 &lt;&lt;if $day9OnTime&gt;&gt;
@@ -3433,7 +3513,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;&lt;/if&gt;&gt;
 
 &lt;div class=&quot;reveal-link&quot;&gt;[[Go home-&gt;Day9_MomCall]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="73" name="Day9_MomCall" tags="nobr" position="2925,950" size="100,100">/* 妈妈电话;若已加入Yakey Connect,通话计入奖励+10coins */
+</tw-passagedata><tw-passagedata pid="72" name="Day9_MomCall" tags="nobr" position="2925,950" size="100,100">/* 妈妈电话;若已加入Yakey Connect,通话计入奖励+10coins */
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;Once you&#39;re home, you notice a missed call from your mom.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You decide to call her back.&lt;/div&gt;
@@ -3463,7 +3543,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;&lt;/if&gt;&gt;
 &lt;div class=&quot;reveal-link&quot;&gt;[[Go to sleep-&gt;Home]]&lt;/div&gt;
 &lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;
-&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="74" name="DayRouter" tags="" position="425,250" size="100,100">/* 每日入口:先结局守门,再按天分发到对应剧情 */
+&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="73" name="DayRouter" tags="" position="425,250" size="100,100">/* 每日入口:先结局守门,再按天分发到对应剧情 */
 &lt;&lt;if $health lte 0&gt;&gt;
 	&lt;&lt;goto &quot;Ending_Death&quot;&gt;&gt;
 &lt;&lt;elseif $sanity lte 0&gt;&gt;
@@ -3495,17 +3575,17 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 	&lt;&lt;default&gt;&gt;&lt;&lt;goto &quot;Home&quot;&gt;&gt;
 	&lt;&lt;/switch&gt;&gt;
 &lt;&lt;/if&gt;&gt;
-</tw-passagedata><tw-passagedata pid="75" name="Day10_Start" tags="nobr" position="3150,200" size="100,100">/* Day10房租日:弹窗收30币,交完进晨间 */
+</tw-passagedata><tw-passagedata pid="74" name="Day10_Start" tags="nobr" position="3150,200" size="100,100">/* Day10房租日:弹窗收30币,交完进晨间 */
 &lt;h1&gt;Day 10&lt;/h1&gt;
 &lt;&lt;rentnotice &quot;Day10_Morning&quot;&gt;&gt;
 
-</tw-passagedata><tw-passagedata pid="76" name="Day10_Morning" tags="nobr" position="3150,325" size="100,100">&lt;&lt;news &quot;A safer city for everyone! Ceillian launches smart tags tracking for stray animals🐶🐱&quot;&gt;&gt;
+</tw-passagedata><tw-passagedata pid="75" name="Day10_Morning" tags="nobr" position="3150,325" size="100,100">&lt;&lt;news &quot;A safer city for everyone! Ceillian launches smart tags tracking for stray animals🐶🐱&quot;&gt;&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;The morning air feels colder than yesterday.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You check your balance before leaving for work.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Go out-&gt;Day10_BusStop]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="77" name="Day10_BusStop" tags="nobr" position="3150,450" size="100,100">/* 公交站等车+流浪猫宠物追踪器,分段单击,末尾打车 */
+</tw-passagedata><tw-passagedata pid="76" name="Day10_BusStop" tags="nobr" position="3150,450" size="100,100">/* 公交站等车+流浪猫宠物追踪器,分段单击,末尾打车 */
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You leave home at the same hour and head to the bus stop.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;The bus is taking longer than usual.&lt;/div&gt;
@@ -3532,7 +3612,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;type-link&quot;&gt;[[Take the taxi (−25 Coins)-&gt;Day10_Taxi]]&lt;/div&gt;
 &lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;
 &lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;
-</tw-passagedata><tw-passagedata pid="78" name="Day10_Taxi" tags="nobr" position="3150,575" size="100,100">&lt;&lt;set $money to $money - 25&gt;&gt;
+</tw-passagedata><tw-passagedata pid="77" name="Day10_Taxi" tags="nobr" position="3150,575" size="100,100">&lt;&lt;set $money to $money - 25&gt;&gt;
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;−25 Coins&lt;/span&gt;&lt;/div&gt;
@@ -3546,7 +3626,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Go to work-&gt;Day10_Work]]&lt;/div&gt;
 &lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;
-</tw-passagedata><tw-passagedata pid="79" name="Day10_Work" tags="nobr" position="3150,700" size="100,100">&lt;&lt;if $yakeyWorkplace&gt;&gt;
+</tw-passagedata><tw-passagedata pid="78" name="Day10_Work" tags="nobr" position="3150,700" size="100,100">&lt;&lt;if $yakeyWorkplace&gt;&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;Back at the office, Yakey quietly reorganizes your inbox before you finish your first cup of coffee.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;The emails that need your attention are already at the top.&lt;/div&gt;
@@ -3554,7 +3634,8 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;Routine tasks are grouped together.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You spend less time deciding what to do next, and more time doing it.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
-&lt;div class=&quot;reveal-link&quot;&gt;[[Start working-&gt;Day10_ToWork]]&lt;/div&gt;
+/* 打字完成后才显示工作入口。 */
+&lt;div class=&quot;type-link&quot;&gt;[[Start working-&gt;Day10_ToWork]]&lt;/div&gt;
 &lt;&lt;else&gt;&gt;
 &lt;&lt;if not $hasWorkedToday&gt;&gt;
 &lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
@@ -3571,10 +3652,10 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Go home-&gt;Day10_Voice]]&lt;/div&gt;
 &lt;&lt;/if&gt;&gt;
-</tw-passagedata><tw-passagedata pid="80" name="Day10_ToWork" tags="nobr" position="3087.5,825" size="100,100">/* 高效工作黑屏5秒 */
+</tw-passagedata><tw-passagedata pid="79" name="Day10_ToWork" tags="nobr" position="3087.5,825" size="100,100">/* 高效工作黑屏5秒 */
 &lt;div class=&quot;work-screen&quot;&gt;&lt;div class=&quot;work-text&quot;&gt;WORKING...&lt;/div&gt;&lt;/div&gt;
 &lt;&lt;timed 5s&gt;&gt;&lt;&lt;goto &quot;Day10_YakeyDone&quot;&gt;&gt;&lt;&lt;/timed&gt;&gt;
-</tw-passagedata><tw-passagedata pid="81" name="Day10_Voice" tags="nobr" position="3212.5,825" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="80" name="Day10_Voice" tags="nobr" position="3212.5,825" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;Once you&#39;re home, your phone lights up.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;yakey-box&quot;&gt;
@@ -3609,22 +3690,55 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;&lt;/link&gt;&gt;
 &lt;/div&gt;
 &lt;div id=&quot;voice-result&quot;&gt;&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="82" name="Day10_YakeyDone" tags="nobr" position="3275,700" size="100,100">&lt;&lt;if not $hasWorkedToday&gt;&gt;
-&lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
-&lt;&lt;set $sanity to Math.max(0, $sanity - 20)&gt;&gt;
-&lt;&lt;set $lastWage to setup.dailyWage($day)&gt;&gt;
-&lt;&lt;set $hasWorkedToday to true&gt;&gt;
-&lt;&lt;run setup.refreshCaption()&gt;&gt;
-&lt;&lt;/if&gt;&gt;
+</tw-passagedata><tw-passagedata pid="81" name="Day10_YakeyDone" tags="nobr" position="3275,700" size="100,100">/* Day 10 启用 Yakey Workplace 后的工作结算。 */
 &lt;&lt;type 30ms&gt;&gt;
-&lt;div class=&quot;home-line&quot;&gt;Before you realize it, today&#39;s work is already finished.&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;There is still some time before everyone leaves.&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;You lean back in your chair and scroll through the news for a while.&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;For the first time this week, work doesn&#39;t leave you completely drained.&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;Salary +&lt;&lt;print $lastWage&gt;&gt; Coins · Sanity −20 (work).&lt;/span&gt;&lt;/div&gt;
+	&lt;div class=&quot;home-line&quot;&gt;Before you realize it, today&#39;s work is already finished.&lt;/div&gt;
+	&lt;div class=&quot;home-line&quot;&gt;There is still some time before everyone leaves.&lt;/div&gt;
+	&lt;div class=&quot;home-line&quot;&gt;You lean back in your chair and scroll through the news for a while.&lt;/div&gt;
+	&lt;div class=&quot;home-line&quot;&gt;For the first time this week, work doesn&#39;t leave you completely drained.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
-&lt;div class=&quot;type-link&quot;&gt;[[Go home-&gt;Day10_Voice]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="83" name="Day11_Morning" tags="nobr" position="3500,75" size="100,100">&lt;h1&gt;DAY 11&lt;/h1&gt;
+
+&lt;div id=&quot;pay-collect&quot; class=&quot;type-link&quot;&gt;
+	&lt;&lt;if !$hasWorkedToday&gt;&gt;
+		&lt;div class=&quot;paycheck&quot;&gt;
+			&lt;&lt;set _payLabel to &quot;💳  +&quot; + setup.dailyWage($day) + &quot; Coins  ·  Tap to collect&quot;&gt;&gt;
+
+			&lt;&lt;link _payLabel&gt;&gt;
+				/* 点击时再次检查，防止重复领取工资。 */
+				&lt;&lt;if !$hasWorkedToday&gt;&gt;
+					&lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
+					&lt;&lt;set $sanity to Math.max(0, $sanity - 20)&gt;&gt;
+					&lt;&lt;set $lastWage to setup.dailyWage($day)&gt;&gt;
+					&lt;&lt;set $hasWorkedToday to true&gt;&gt;
+					&lt;&lt;run setup.refreshCaption()&gt;&gt;
+				&lt;&lt;/if&gt;&gt;
+
+				&lt;&lt;replace &quot;#pay-collect&quot;&gt;&gt;
+					&lt;div class=&quot;paycheck collected&quot;&gt;
+						&lt;span class=&quot;system-text&quot;&gt;
+							+&lt;&lt;print $lastWage&gt;&gt; Coins · Sanity −20 (work). Balance: 💳 &lt;&lt;print $money&gt;&gt;
+						&lt;/span&gt;
+					&lt;/div&gt;
+
+					&lt;div class=&quot;reveal-link&quot;&gt;
+						[[Go home-&gt;Day10_Voice]]
+					&lt;/div&gt;
+				&lt;&lt;/replace&gt;&gt;
+			&lt;&lt;/link&gt;&gt;
+		&lt;/div&gt;
+	&lt;&lt;else&gt;&gt;
+		/* 重新进入时不再提供工资领取按钮。 */
+		&lt;div class=&quot;paycheck collected&quot;&gt;
+			&lt;span class=&quot;system-text&quot;&gt;
+				Today&#39;s salary has already been collected.
+			&lt;/span&gt;
+		&lt;/div&gt;
+
+		&lt;div class=&quot;reveal-link&quot;&gt;
+			[[Go home-&gt;Day10_Voice]]
+		&lt;/div&gt;
+	&lt;&lt;/if&gt;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="82" name="Day11_Morning" tags="nobr" position="3500,75" size="100,100">&lt;h1&gt;DAY 11&lt;/h1&gt;
 /* 三条路都解锁删除数据 */
 &lt;&lt;set $deleteUnlocked to true&gt;&gt;
 &lt;&lt;set $seenDay11 to true&gt;&gt;
@@ -3653,9 +3767,9 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 ▢ &lt;&lt;link &quot;Rest in bed.&quot;&gt;&gt;&lt;&lt;set $day11Choice to &quot;rest&quot;&gt;&gt;&lt;&lt;goto &quot;Day11_Rest&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;/div&gt;
 &lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;
-</tw-passagedata><tw-passagedata pid="84" name="Day11_WorkBlack" tags="nobr" position="3375,450" size="100,100">&lt;div class=&quot;work-screen&quot;&gt;&lt;div class=&quot;work-text&quot;&gt;WORKING...&lt;/div&gt;&lt;/div&gt;
+</tw-passagedata><tw-passagedata pid="83" name="Day11_WorkBlack" tags="nobr" position="3375,450" size="100,100">&lt;div class=&quot;work-screen&quot;&gt;&lt;div class=&quot;work-text&quot;&gt;WORKING...&lt;/div&gt;&lt;/div&gt;
 &lt;&lt;timed 5s&gt;&gt;&lt;&lt;goto &quot;Day11_WorkDone&quot;&gt;&gt;&lt;&lt;/timed&gt;&gt;
-</tw-passagedata><tw-passagedata pid="85" name="Day11_Protest" tags="nobr" position="3500,450" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="84" name="Day11_Protest" tags="nobr" position="3500,450" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;As you leave your apartment building, you notice a small crowd gathering in the square across the street.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Some people are holding cardboard signs.&lt;/div&gt;
@@ -3685,21 +3799,53 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;&lt;else&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day11_ClinicDone]]&lt;/div&gt;
 &lt;&lt;/if&gt;&gt;
-</tw-passagedata><tw-passagedata pid="86" name="Day11_WorkDone" tags="nobr" position="3375,575" size="100,100">/* 有工资;剧本只标Health-1 */
-&lt;&lt;if not $hasWorkedToday&gt;&gt;
-&lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
-&lt;&lt;set $health to Math.max(0, $health - 1)&gt;&gt;
-&lt;&lt;set $lastWage to setup.dailyWage($day)&gt;&gt;
-&lt;&lt;set $hasWorkedToday to true&gt;&gt;
-&lt;&lt;run setup.refreshCaption()&gt;&gt;
-&lt;&lt;/if&gt;&gt;
+</tw-passagedata><tw-passagedata pid="85" name="Day11_WorkDone" tags="nobr" position="3375,575" size="100,100">/* Day 11 带病工作：领取工资，同时失去一点生命。 */
 &lt;&lt;type 30ms&gt;&gt;
-&lt;div class=&quot;home-line&quot;&gt;By the time you get home, your head is pounding.&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;You barely make it through the day.&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;Health −1&lt;/span&gt;&lt;/div&gt;
+	&lt;div class=&quot;home-line&quot;&gt;By the time you get home, your head is pounding.&lt;/div&gt;
+	&lt;div class=&quot;home-line&quot;&gt;You barely make it through the day.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
-&lt;div class=&quot;type-link&quot;&gt;[[Go home-&gt;Home]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="87" name="Day11_Rest" tags="nobr" position="3500,325" size="100,100">/* 呆在家:无工资,Sanity-45 */
+
+&lt;div id=&quot;pay-collect&quot; class=&quot;type-link&quot;&gt;
+	&lt;&lt;if !$hasWorkedToday&gt;&gt;
+		&lt;div class=&quot;paycheck&quot;&gt;
+			&lt;&lt;set _payLabel to &quot;💳  +&quot; + setup.dailyWage($day) + &quot; Coins  ·  Tap to collect&quot;&gt;&gt;
+
+			&lt;&lt;link _payLabel&gt;&gt;
+				/* 点击时再次检查，防止重复领取。 */
+				&lt;&lt;if !$hasWorkedToday&gt;&gt;
+					&lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
+					&lt;&lt;set $health to Math.max(0, $health - 1)&gt;&gt;
+					&lt;&lt;set $lastWage to setup.dailyWage($day)&gt;&gt;
+					&lt;&lt;set $hasWorkedToday to true&gt;&gt;
+					&lt;&lt;run setup.refreshCaption()&gt;&gt;
+				&lt;&lt;/if&gt;&gt;
+
+				&lt;&lt;replace &quot;#pay-collect&quot;&gt;&gt;
+					&lt;div class=&quot;paycheck collected&quot;&gt;
+						&lt;span class=&quot;system-text&quot;&gt;
+							+&lt;&lt;print $lastWage&gt;&gt; Coins · Health −1. Balance: 💳 &lt;&lt;print $money&gt;&gt;
+						&lt;/span&gt;
+					&lt;/div&gt;
+
+					&lt;div class=&quot;reveal-link&quot;&gt;
+						[[Go home-&gt;Home]]
+					&lt;/div&gt;
+				&lt;&lt;/replace&gt;&gt;
+			&lt;&lt;/link&gt;&gt;
+		&lt;/div&gt;
+	&lt;&lt;else&gt;&gt;
+		/* 重新进入时不允许再次领取工资。 */
+		&lt;div class=&quot;paycheck collected&quot;&gt;
+			&lt;span class=&quot;system-text&quot;&gt;
+				Today&#39;s salary has already been collected.
+			&lt;/span&gt;
+		&lt;/div&gt;
+
+		&lt;div class=&quot;reveal-link&quot;&gt;
+			[[Go home-&gt;Home]]
+		&lt;/div&gt;
+	&lt;&lt;/if&gt;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="86" name="Day11_Rest" tags="nobr" position="3500,325" size="100,100">/* 呆在家:无工资,Sanity-45 */
 &lt;&lt;if not $hasWorkedToday&gt;&gt;
 &lt;&lt;set $sanity to Math.max(0, $sanity - 45)&gt;&gt;
 &lt;&lt;set $hasWorkedToday to true&gt;&gt;
@@ -3715,17 +3861,17 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;Sanity −45&lt;/span&gt;&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Go to sleep-&gt;Sleep]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="88" name="Day11_WorkIntro" tags="nobr" position="3375,225" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="87" name="Day11_WorkIntro" tags="nobr" position="3375,225" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You tell yourself it&#39;ll pass.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You leave home with a slight fever, hoping nobody notices.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day11_Protest]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="89" name="Day11_ClinicIntro" tags="nobr" position="3600,225" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="88" name="Day11_ClinicIntro" tags="nobr" position="3600,225" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You decide not to take any chances.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You take sick leave and go to the clinic.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day11_Protest]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="90" name="Day11_ClinicDone" tags="nobr" position="3500,575" size="100,100">/* 看医生:-30币静默扣,请病假无工资 */
+</tw-passagedata><tw-passagedata pid="89" name="Day11_ClinicDone" tags="nobr" position="3500,575" size="100,100">/* 看医生:-30币静默扣,请病假无工资 */
 &lt;&lt;if not $hasWorkedToday&gt;&gt;
 &lt;&lt;set $money to $money - 30&gt;&gt;
 &lt;&lt;set $hasWorkedToday to true&gt;&gt;
@@ -3737,14 +3883,14 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;You took the medicine and returned home.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Go home-&gt;Home]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="91" name="Day12_Morning" tags="nobr" position="3750,100" size="100,100">&lt;h1&gt;DAY 12&lt;/h1&gt;
+</tw-passagedata><tw-passagedata pid="90" name="Day12_Morning" tags="nobr" position="3750,100" size="100,100">&lt;h1&gt;DAY 12&lt;/h1&gt;
 &lt;&lt;news &quot;Our Workforce, Your Best Recruiters! Caring Friends has officially launched, winning this year&#39;s King&#39;s Innovation Award&quot;&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You wake up feeling much more better. Other than a bit of residual weakness, the illness has passed.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Go to Work-&gt;Day12_Neighbour]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="92" name="Day12_Neighbour" tags="nobr" position="3750,225" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="91" name="Day12_Neighbour" tags="nobr" position="3750,225" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;As you leave home, you notice your neighbour standing outside alone.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;There&#39;s no dog beside him today.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&quot;You alright?&quot; you ask.&lt;/div&gt;
@@ -3759,7 +3905,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;&lt;else&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue towards the office-&gt;Day12_Terminated]]&lt;/div&gt;
 &lt;&lt;/if&gt;&gt;
-</tw-passagedata><tw-passagedata pid="93" name="Day12_Office" tags="nobr" position="3700,350" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="92" name="Day12_Office" tags="nobr" position="3700,350" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You walk into the office and notice everyone has already gathered around. Your boss is walking around the company.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;notice-line&quot;&gt;From now on, your work performance will be scored by Yakey.&lt;/div&gt;
@@ -3775,7 +3921,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day12_Overtime]]&lt;/div&gt;
 &lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;
-</tw-passagedata><tw-passagedata pid="94" name="Day12_Terminated" tags="nobr" position="3825,350" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="93" name="Day12_Terminated" tags="nobr" position="3825,350" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You arrive at work as usual.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Your boss asks to see you.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;After a brief conversation, you&#39;re informed that your position has been terminated.&lt;/div&gt;
@@ -3783,7 +3929,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;&quot;Unfortunately, since you didn&#39;t enable Yakey Workplace, you&#39;ve fallen behind.&quot;&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Ending_OwnBrain]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="95" name="Ending_OwnBrain" tags="nobr" position="75,1025" size="100,100">&lt;h1&gt;THE END&lt;/h1&gt;
+</tw-passagedata><tw-passagedata pid="94" name="Ending_OwnBrain" tags="nobr" position="75,1025" size="100,100">&lt;h1&gt;THE END&lt;/h1&gt;
 &lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You walk out of this building for the last time.&lt;/div&gt;
@@ -3794,7 +3940,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;div class=&quot;home-line ending-line&quot;&gt;🏆 Normal Ending: I Want to Use My Own Brain.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
-</tw-passagedata><tw-passagedata pid="96" name="Day12_Overtime" tags="nobr" position="3687.5,475" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="95" name="Day12_Overtime" tags="nobr" position="3687.5,475" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;A co-worker has called in sick today.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Your boss is looking for someone to stay late and finish the remaining work.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;If you volunteer, you&#39;ll receive an additional &lt;strong&gt;15 Coins&lt;/strong&gt;.&lt;/div&gt;
@@ -3804,7 +3950,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;br&gt;
 ▢ &lt;&lt;link &quot;Leave on time.&quot;&gt;&gt;&lt;&lt;goto &quot;Day12_LeaveOnTime&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="97" name="Day12_OvertimeStay" tags="nobr" position="3675,600" size="100,100">/* 上班结算:发工资 + 正常sanity扣除 + 加班奖励15 + 额外sanity-10 */
+</tw-passagedata><tw-passagedata pid="96" name="Day12_OvertimeStay" tags="nobr" position="3675,600" size="100,100">/* 上班结算:发工资 + 正常sanity扣除 + 加班奖励15 + 额外sanity-10 */
 &lt;&lt;if not $hasWorkedToday&gt;&gt;
 &lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
 &lt;&lt;set $lastWage to setup.dailyWage($day)&gt;&gt;
@@ -3824,7 +3970,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;Sanity −10&lt;/span&gt;&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Leave Office-&gt;Day12_Report]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="98" name="Day12_Report" tags="nobr" position="3675,725" size="100,100">&lt;div class=&quot;sys-report&quot; id=&quot;yakeyReport&quot;&gt;
+</tw-passagedata><tw-passagedata pid="97" name="Day12_Report" tags="nobr" position="3675,725" size="100,100">&lt;div class=&quot;sys-report&quot; id=&quot;yakeyReport&quot;&gt;
 &lt;div class=&quot;sys-report-top&quot;&gt;
 &lt;span&gt;YAKEY :: PERFORMANCE REPORT&lt;/span&gt;
 &lt;span class=&quot;sys-report-x&quot;&gt;&lt;&lt;link &quot;╳&quot;&gt;&gt;&lt;&lt;goto &quot;Day12_Arrive&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/span&gt;
@@ -3841,7 +3987,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;sys-report-foot&quot;&gt;&amp;gt; Keep it up. Your work is being optimised :)&lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="99" name="Day12_LeaveOnTime" tags="nobr" position="3825,600" size="100,100">/* 上班结算:发工资 + 正常sanity扣除,无加班 */
+</tw-passagedata><tw-passagedata pid="98" name="Day12_LeaveOnTime" tags="nobr" position="3825,600" size="100,100">/* 上班结算:发工资 + 正常sanity扣除,无加班 */
 &lt;&lt;if not $hasWorkedToday&gt;&gt;
 &lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
 &lt;&lt;set $lastWage to setup.dailyWage($day)&gt;&gt;
@@ -3854,13 +4000,13 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;The extra money isn&#39;t worth sacrificing what little energy you have left.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Leave Office-&gt;Day12_Report]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="100" name="Day12_Arrive" tags="nobr" position="3675,850" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="99" name="Day12_Arrive" tags="nobr" position="3675,850" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;After spending more than an hour on the bus, you finally arrive home.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You unlock your door and step inside.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You&#39;re too tired to think about tomorrow.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Enter Apartment 17B-&gt;Apartment17B]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="101" name="Apartment17B" tags="nobr" position="3675,975" size="100,100">/* 结局守门 + 晚间中枢(仅商店+睡觉;上班已写进各天剧情) */
+</tw-passagedata><tw-passagedata pid="100" name="Apartment17B" tags="nobr" position="3675,975" size="100,100">/* 结局守门 + 晚间中枢(仅商店+睡觉;上班已写进各天剧情) */
 &lt;&lt;if $health lte 0&gt;&gt;
 	&lt;&lt;goto &quot;Ending_Death&quot;&gt;&gt;
 &lt;&lt;elseif $sanity lte 0&gt;&gt;
@@ -3875,9 +4021,9 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 		[[Go to sleep-&gt;Sleep]]
 	&lt;/div&gt;
 &lt;&lt;/if&gt;&gt;
-</tw-passagedata><tw-passagedata pid="102" name="Day13_Morning" tags="nobr" position="4025,125" size="100,100">/* Day13房租日:先弹30币房租,交完进正文 */
+</tw-passagedata><tw-passagedata pid="101" name="Day13_Morning" tags="nobr" position="4025,125" size="100,100">/* Day13房租日:先弹30币房租,交完进正文 */
 &lt;h1&gt;DAY 13&lt;/h1&gt;
-&lt;&lt;rentnotice &quot;Day13_Intro&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="103" name="Day13_Intro" tags="nobr" position="4025,250" size="100,100">&lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
+&lt;&lt;rentnotice &quot;Day13_Intro&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="102" name="Day13_Intro" tags="nobr" position="4025,250" size="100,100">&lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;&lt;strong&gt;It&#39;s finally Saturday.&lt;/strong&gt;&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;The sky is overcast, but it hasn&#39;t started raining.&lt;/div&gt;
@@ -3897,7 +4043,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;You head outside.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day13_Door]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="104" name="Day13_Door" tags="nobr" position="4025,375" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="103" name="Day13_Door" tags="nobr" position="4025,375" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You knock on the door.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;No answer.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You wait.&lt;/div&gt;
@@ -3922,11 +4068,11 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;Eventually he says,&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&quot;I still keep thinking he&#39;ll come running back.&quot;&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You stay with him for a little while.&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;Sometimes sitting quietly beside someone is enough.&lt;/div&gt;
+&lt;div class=&quot;home-line&quot;&gt;It&#39;s the only thing you can do.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day13_Notification]]&lt;/div&gt;
 &lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;
-</tw-passagedata><tw-passagedata pid="105" name="Day13_Notification" tags="nobr" position="4025,500" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="104" name="Day13_Notification" tags="nobr" position="4025,500" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;When you get home, another notification appears.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;div class=&quot;yakey-note&quot;&gt;&lt;strong&gt;YAKEY&lt;/strong&gt;&lt;/div&gt;
@@ -3937,7 +4083,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;br&gt;
 ▢ &lt;&lt;link &quot;Ignore it.&quot;&gt;&gt;&lt;&lt;goto &quot;Day13_Ignore&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="106" name="Day13_Confirm" tags="nobr" position="3975,625" size="100,100">/* 确认举报:+15 Ceillian score */
+</tw-passagedata><tw-passagedata pid="105" name="Day13_Confirm" tags="nobr" position="3975,625" size="100,100">/* 确认举报:+15 Ceillian score */
 &lt;&lt;set $ceillianPoints to $ceillianPoints + 15&gt;&gt;
 &lt;&lt;set $day13Confirmed to true&gt;&gt;
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
@@ -3947,14 +4093,14 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;Ceillian score +15&lt;/span&gt;&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Apartment17B]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="107" name="Day13_Ignore" tags="nobr" position="4100,625" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="106" name="Day13_Ignore" tags="nobr" position="4100,625" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You dismiss the notification.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;For a moment, your thumb lingers above the screen.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Something about the message doesn&#39;t sit right with you.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;The rest of the afternoon passes quickly.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Apartment17B]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="108" name="Day14_Morning" tags="nobr" position="4300,125" size="100,100">&lt;h1&gt;DAY 14&lt;/h1&gt;
+</tw-passagedata><tw-passagedata pid="107" name="Day14_Morning" tags="nobr" position="4300,125" size="100,100">&lt;h1&gt;DAY 14&lt;/h1&gt;
 &lt;&lt;news &quot;Your baby&#39;s first Ceillian Profile, issued at birth. Give them the gift of never having to hide. Call 447859 for details.&quot;&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;&lt;type 30ms&gt;&gt;
@@ -3964,7 +4110,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;You decide to book an appointment with a therapist.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day14_Therapy]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="109" name="Day14_Therapy" tags="nobr" position="4300,250" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="108" name="Day14_Therapy" tags="nobr" position="4300,250" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;At first, you struggle to open up.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Part of you wonders whether you&#39;re wasting their time.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Your life isn&#39;t &lt;em&gt;that&lt;/em&gt; bad.&lt;/div&gt;
@@ -3979,7 +4125,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;Just then, your phone vibrates.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day14_Upload]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="110" name="Day14_Upload" tags="nobr" position="4300,375" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="109" name="Day14_Upload" tags="nobr" position="4300,375" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;yakey-note&quot;&gt;&lt;strong&gt;Upload the conversation with the therapist?&lt;/strong&gt; (+30 coins)&lt;/div&gt;
 &lt;div class=&quot;home-soft&quot;&gt;&lt;em&gt;All personal experiences will be fully anonymised.&lt;/em&gt;&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
@@ -3999,7 +4145,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 ▢ &lt;&lt;link &quot;Of Course No&quot;&gt;&gt;&lt;&lt;goto &quot;Day14_UploadNo&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;/div&gt;
 &lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;
-</tw-passagedata><tw-passagedata pid="111" name="Day14_UploadYes" tags="nobr" position="4250,500" size="100,100">/* 上传治疗记录:+30 coins(严格照剧本,仅金币) */
+</tw-passagedata><tw-passagedata pid="110" name="Day14_UploadYes" tags="nobr" position="4250,500" size="100,100">/* 上传治疗记录:+30 coins(严格照剧本,仅金币) */
 &lt;&lt;set $money to $money + 30&gt;&gt;
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
 &lt;&lt;type 30ms&gt;&gt;
@@ -4010,18 +4156,18 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;+30 Coins&lt;/span&gt;&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Apartment17B]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="112" name="Day14_UploadNo" tags="nobr" position="4375,500" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="111" name="Day14_UploadNo" tags="nobr" position="4375,500" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You feel very bad about this.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Some things should stay private.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You lock your phone.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Apartment17B]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="113" name="Day15_Morning" tags="nobr" position="4500,125" size="100,100">&lt;h1&gt;DAY 15&lt;/h1&gt;
+</tw-passagedata><tw-passagedata pid="112" name="Day15_Morning" tags="nobr" position="4500,125" size="100,100">&lt;h1&gt;DAY 15&lt;/h1&gt;
 &lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;It&#39;s Monday again.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
-&lt;div class=&quot;type-link&quot;&gt;[[Go to work-&gt;Day15_Office]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="114" name="Day15_Office" tags="nobr" position="4500,250" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+&lt;div class=&quot;type-link&quot;&gt;[[Go to work-&gt;Day15_Office]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="113" name="Day15_Office" tags="nobr" position="4500,250" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;When you arrive at work, one of your colleagues is sitting at the desk beside yours.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&quot;The system recommended I sit next to you today.&quot;&lt;/div&gt;
@@ -4033,7 +4179,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;br&gt;
 ▢ &lt;&lt;link &quot;Say nothing.&quot;&gt;&gt;&lt;&lt;goto &quot;Day15_SayNothing&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="115" name="Day15_AskMove" tags="nobr" position="4500,375" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="114" name="Day15_AskMove" tags="nobr" position="4500,375" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You tell your colleague you&#39;d rather work alone.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;She looks slightly embarrassed.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&quot;Oh... sorry.&quot;&lt;/div&gt;
@@ -4042,15 +4188,15 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;Everyone spends the rest of the afternoon staring at their own screen.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day15_WorkBlack]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="116" name="Day15_WorkBlack" tags="nobr" position="4550,525" size="100,100">&lt;div class=&quot;work-screen&quot;&gt;&lt;div class=&quot;work-text&quot;&gt;WORKING...&lt;/div&gt;&lt;/div&gt;
+</tw-passagedata><tw-passagedata pid="115" name="Day15_WorkBlack" tags="nobr" position="4550,525" size="100,100">&lt;div class=&quot;work-screen&quot;&gt;&lt;div class=&quot;work-text&quot;&gt;WORKING...&lt;/div&gt;&lt;/div&gt;
 &lt;&lt;timed 5s&gt;&gt;&lt;&lt;goto &quot;Day15_WorkDone&quot;&gt;&gt;&lt;&lt;/timed&gt;&gt;
-</tw-passagedata><tw-passagedata pid="117" name="Day15_SayNothing" tags="nobr" position="4650,375" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="116" name="Day15_SayNothing" tags="nobr" position="4650,375" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;She opens her laptop and starts working.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;The office grows silent again.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Everyone spends the rest of the afternoon staring at their own screen.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day15_WorkBlack]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="118" name="Day15_WorkDone" tags="nobr" position="4550,650" size="100,100">/* 工作日结算:工资(Day8+为40) + sanity-40 */
+</tw-passagedata><tw-passagedata pid="117" name="Day15_WorkDone" tags="nobr" position="4550,650" size="100,100">/* 工作日结算:工资(Day8+为40) + sanity-40 */
 &lt;&lt;if not $hasWorkedToday&gt;&gt;
 &lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
 &lt;&lt;set $sanity to Math.max(0, $sanity - 40)&gt;&gt;
@@ -4068,7 +4214,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[View report-&gt;Day15_Report]]&lt;/div&gt;
 &lt;&lt;/if&gt;&gt;
-</tw-passagedata><tw-passagedata pid="119" name="Day15_Report" tags="nobr" position="4550,800" size="100,100">&lt;div class=&quot;sys-report&quot; id=&quot;yakeyReport&quot;&gt;
+</tw-passagedata><tw-passagedata pid="118" name="Day15_Report" tags="nobr" position="4550,800" size="100,100">&lt;div class=&quot;sys-report&quot; id=&quot;yakeyReport&quot;&gt;
 &lt;div class=&quot;sys-report-top&quot;&gt;
 &lt;span&gt;YAKEY :: PERFORMANCE REPORT&lt;/span&gt;
 &lt;span class=&quot;sys-report-x&quot;&gt;&lt;&lt;link &quot;╳&quot;&gt;&gt;&lt;&lt;goto &quot;Day15_Friend&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/span&gt;
@@ -4085,7 +4231,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;sys-report-foot&quot;&gt;&amp;gt; You feel relieved.&lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="120" name="Day15_Friend" tags="nobr" position="4550,925" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="119" name="Day15_Friend" tags="nobr" position="4550,925" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;Back home, your phone buzzes.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;It&#39;s from your friend.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
@@ -4115,49 +4261,50 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;&lt;/timed&gt;&gt;
 &lt;/div&gt;
 &lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;
-</tw-passagedata><tw-passagedata pid="121" name="Day15_Friend2" tags="nobr" position="4550,1050" size="100,100">&lt;&lt;type 30ms&gt;&gt;
-&lt;div class=&quot;home-line&quot;&gt;You stare at the screen for a moment.&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;Then another message arrives.&lt;/div&gt;
+</tw-passagedata><tw-passagedata pid="120" name="Day15_Friend2" tags="nobr" position="4550,1050" size="100,100">/* Day 15：朋友询问玩家近期状态。 */
+&lt;&lt;type 30ms&gt;&gt;
+	&lt;div class=&quot;home-line&quot;&gt;You stare at the screen for a moment.&lt;/div&gt;
+	&lt;div class=&quot;home-line&quot;&gt;Then another message arrives.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
-&lt;span class=&quot;clickmore&quot;&gt;&lt;&lt;linkreplace &quot; &quot; &quot;fade&quot;&gt;&gt;
-&lt;div class=&quot;phone-chat&quot;&gt;
-&lt;div class=&quot;msg-sender&quot;&gt;FRIEND&lt;/div&gt;
-&lt;&lt;timed 0.6s&gt;&gt;
-&lt;div class=&quot;msg msg-in&quot;&gt;&quot;Hey.. have you been sleeping alright?&quot;&lt;/div&gt;
-&lt;&lt;next 1.2s&gt;&gt;
-&lt;div class=&quot;msg msg-out&quot;&gt;&quot;...Why?&quot;&lt;/div&gt;
-&lt;&lt;next 1.2s&gt;&gt;
-&lt;div class=&quot;msg msg-in&quot;&gt;&quot;Yakey suggested I check in on you.&quot;&lt;/div&gt;
-&lt;&lt;next 1.2s&gt;&gt;
-&lt;div class=&quot;msg msg-out&quot;&gt;&quot;...It did?&quot;&lt;/div&gt;
-&lt;&lt;next 1.0s&gt;&gt;
-&lt;div class=&quot;msg msg-in&quot;&gt;&quot;Yeah.&quot;&lt;/div&gt;
-&lt;&lt;next 1.0s&gt;&gt;
-&lt;div class=&quot;msg msg-in typing&quot; id=&quot;frt2&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/div&gt;
-&lt;&lt;next 3s&gt;&gt;
-&lt;&lt;replace &quot;#frt2&quot;&gt;&gt;&lt;div class=&quot;msg msg-in&quot;&gt;&quot;It gives little wellness hints now and then. Are you alright?&quot;&lt;/div&gt;&lt;&lt;/replace&gt;&gt;
-&lt;&lt;next 0.8s&gt;&gt;
-/* 停在这里,出现&quot;Type a reply&quot;,点了才继续 */
-&lt;span id=&quot;reply-gate&quot; class=&quot;reveal-link&quot; style=&quot;display:block;&quot;&gt;&lt;&lt;link &quot;Type a reply&quot;&gt;&gt;
 
-&lt;&lt;replace &quot;#reply-gate&quot;&gt;&gt;
-&lt;div class=&quot;msg msg-out&quot;&gt;&quot;I&#39;m fine.&quot;&lt;/div&gt;
-&lt;&lt;timed 1.2s&gt;&gt;
-&lt;div class=&quot;msg msg-out&quot;&gt;&quot;I guess I&#39;ve just been sighing a little more than usual.&quot;&lt;/div&gt;
-&lt;span id=&quot;fr-final&quot;&gt;&lt;/span&gt;
-&lt;&lt;/replace&gt;&gt;
-&lt;&lt;timed 1.2s&gt;&gt;
-&lt;&lt;append &quot;#fr-final&quot;&gt;&gt;&lt;div class=&quot;msg msg-in&quot;&gt;&quot;Maybe.&quot;&lt;/div&gt;&lt;&lt;/append&gt;&gt;
-&lt;&lt;next 1.8s&gt;&gt;
-&lt;&lt;append &quot;#fr-final&quot;&gt;&gt;&lt;div class=&quot;msg msg-in&quot;&gt;&quot;Just take care of yourself, okay?&quot;&lt;/div&gt;&lt;&lt;/append&gt;&gt;
-&lt;&lt;next 0.8s&gt;&gt;
-&lt;&lt;append &quot;#fr-final&quot;&gt;&gt;&lt;div class=&quot;reveal-link&quot;&gt;[[Continue-&gt;Day15_End]]&lt;/div&gt;&lt;&lt;/append&gt;&gt;
-&lt;&lt;/timed&gt;&gt;
-&lt;&lt;/link&gt;&gt;&lt;/span&gt;
-&lt;&lt;/timed&gt;&gt;
-&lt;/div&gt;
-&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;
-</tw-passagedata><tw-passagedata pid="122" name="Day15_End" tags="nobr" position="4550,1175" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+&lt;span class=&quot;clickmore&quot;&gt;&lt;&lt;linkreplace &quot; &quot; &quot;fade&quot;&gt;&gt;
+	&lt;div class=&quot;phone-chat&quot;&gt;
+		&lt;div class=&quot;msg-sender&quot;&gt;FRIEND&lt;/div&gt;
+
+		&lt;&lt;timed 0.6s&gt;&gt;
+			&lt;div class=&quot;msg msg-in&quot;&gt;&quot;Hey.. have you been sleeping alright?&quot;&lt;/div&gt;
+
+			&lt;&lt;next 1.2s&gt;&gt;
+			&lt;div class=&quot;msg msg-out&quot;&gt;&quot;...Why?&quot;&lt;/div&gt;
+
+			&lt;&lt;next 1.2s&gt;&gt;
+			&lt;div class=&quot;msg msg-in&quot;&gt;&quot;Yakey suggested I check in on you.&quot;&lt;/div&gt;
+
+			&lt;&lt;next 1.2s&gt;&gt;
+			&lt;div class=&quot;msg msg-out&quot;&gt;&quot;...It did?&quot;&lt;/div&gt;
+
+			&lt;&lt;next 1s&gt;&gt;
+			&lt;div class=&quot;msg msg-in&quot;&gt;&quot;Yeah.&quot;&lt;/div&gt;
+
+			&lt;&lt;next 1s&gt;&gt;
+			&lt;div class=&quot;msg msg-in typing&quot; id=&quot;frt2&quot;&gt;
+				&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;
+			&lt;/div&gt;
+
+			&lt;&lt;next 3s&gt;&gt;
+			&lt;&lt;replace &quot;#frt2&quot;&gt;&gt;
+				&lt;div class=&quot;msg msg-in&quot;&gt;
+					&quot;It gives little wellness hints now and then. Are you alright?&quot;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+
+			&lt;&lt;next 0.8s&gt;&gt;
+			&lt;div class=&quot;reveal-link&quot;&gt;
+				[[Type a reply-&gt;Day15_FriendReply]]
+			&lt;/div&gt;
+		&lt;&lt;/timed&gt;&gt;
+	&lt;/div&gt;
+&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="121" name="Day15_End" tags="nobr" position="4550,1175" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;The conversation ends.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You put your phone down.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;The concern should have felt comforting.&lt;/div&gt;
@@ -4180,7 +4327,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;br&gt;
 [[Go to Sleep-&gt;Sleep]]
 &lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="123" name="Day16_Start" tags="nobr" position="4850,125" size="100,100">&lt;h1&gt;DAY 16&lt;/h1&gt;
+</tw-passagedata><tw-passagedata pid="122" name="Day16_Start" tags="nobr" position="4850,125" size="100,100">&lt;h1&gt;DAY 16&lt;/h1&gt;
 &lt;&lt;news &quot;Why sleep for free? Turn your dreams into dividends with Yakey DreamSync™. Opt in tonight. Wake up rewarded.&quot;&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;&lt;type 30ms&gt;&gt;
@@ -4203,8 +4350,8 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;&lt;strong&gt;&quot;They don&#39;t need to force you.&quot;&lt;/strong&gt;&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&lt;strong&gt;&quot;They only need to make every other choice harder.&quot;&lt;/strong&gt;&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
-&lt;div class=&quot;type-link&quot;&gt;[[Go to Work-&gt;Day16_WorkBlack]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="124" name="Day16_WorkBlack" tags="nobr" position="4850,250" size="100,100">&lt;div class=&quot;work-screen&quot;&gt;&lt;div class=&quot;work-text&quot;&gt;WORKING...&lt;/div&gt;&lt;/div&gt;
-&lt;&lt;timed 5s&gt;&gt;&lt;&lt;goto &quot;Day16_Report&quot;&gt;&gt;&lt;&lt;/timed&gt;&gt;</tw-passagedata><tw-passagedata pid="125" name="Day16_Report" tags="nobr" position="4850,375" size="100,100">/* 工作日结算:工资(Day8+为40) + sanity-40,沿用 Day15_WorkDone 写法 */
+&lt;div class=&quot;type-link&quot;&gt;[[Go to Work-&gt;Day16_WorkBlack]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="123" name="Day16_WorkBlack" tags="nobr" position="4850,250" size="100,100">&lt;div class=&quot;work-screen&quot;&gt;&lt;div class=&quot;work-text&quot;&gt;WORKING...&lt;/div&gt;&lt;/div&gt;
+&lt;&lt;timed 5s&gt;&gt;&lt;&lt;goto &quot;Day16_Report&quot;&gt;&gt;&lt;&lt;/timed&gt;&gt;</tw-passagedata><tw-passagedata pid="124" name="Day16_Report" tags="nobr" position="4850,375" size="100,100">/* 工作日结算:工资(Day8+为40) + sanity-40,沿用 Day15_WorkDone 写法 */
 &lt;&lt;if not $hasWorkedToday&gt;&gt;
 &lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
 &lt;&lt;set $sanity to Math.max(0, $sanity - 40)&gt;&gt;
@@ -4232,7 +4379,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;sys-report-foot&quot;&gt;&amp;gt; Please review your recent performance.&lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
-&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="126" name="Day16_Boss" tags="nobr" position="4850,525" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="125" name="Day16_Boss" tags="nobr" position="4850,525" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You stare at the number for a moment.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Not long after, your boss calls you into his office.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;He turns your score page towards you and asks what happened.&lt;/div&gt;
@@ -4250,7 +4397,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;You are about to explain yourself again, but he has already looked down at the next file on his desk.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Go Home-&gt;Day16_Home]]&lt;/div&gt;
-&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="127" name="Day16_Home" tags="nobr" position="4850,650" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="126" name="Day16_Home" tags="nobr" position="4850,650" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;When you get home, you notice a package outside your door that does not belong to you.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;span class=&quot;clickmore&quot;&gt;&lt;&lt;linkreplace &quot; &quot; &quot;fade&quot;&gt;&gt;
@@ -4263,7 +4410,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;His face is wearing a faint touch of sadness.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day16_Letter]]&lt;/div&gt;
-&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="128" name="Day16_Letter" tags="nobr" position="4850,775" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="127" name="Day16_Letter" tags="nobr" position="4850,775" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You hand him the package.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;And tell him it was delivered to your place by mistake.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&quot;Thank you very much,&quot; he says.&lt;/div&gt;
@@ -4280,7 +4427,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;&lt;strong&gt;&quot;Behavioural Instability.&quot;&lt;/strong&gt;&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Even he seems unsure what the phrase is supposed to mean.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
-&lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day16_Neighbour]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="129" name="Day16_Neighbour" tags="nobr" position="4850,900" size="100,100">&lt;&lt;if $day13Confirmed&gt;&gt;
+&lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day16_Neighbour]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="128" name="Day16_Neighbour" tags="nobr" position="4850,900" size="100,100">&lt;&lt;if $day13Confirmed&gt;&gt;
 /* Day13 确认过邻居&quot;异常行为&quot;的玩家 */
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You suddenly feel uneasy.&lt;/div&gt;
@@ -4305,7 +4452,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;You have no idea where they got the information from.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day16_NeighbourEnd]]&lt;/div&gt;
-&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="130" name="Day16_NeighbourEnd" tags="nobr" position="4850,1025" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="129" name="Day16_NeighbourEnd" tags="nobr" position="4850,1025" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;Your neighbour is quiet for a while.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Then he says:&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&quot;I was fine.&quot;&lt;/div&gt;
@@ -4323,7 +4470,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;Then he closes the door.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Go Home-&gt;Home]]&lt;/div&gt;
-&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="131" name="Day17_Start" tags="nobr" position="5000,125" size="100,100">&lt;h1&gt;DAY 17&lt;/h1&gt;
+&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="130" name="Day17_Start" tags="nobr" position="5000,125" size="100,100">&lt;h1&gt;DAY 17&lt;/h1&gt;
 &lt;&lt;news &quot;Stop guessing. Upload Dating Records. To find out who you&#39;ll love, how long, and what it&#39;ll cost you. Romance, optimized.&quot;&gt;&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
@@ -4332,7 +4479,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Go Out-&gt;Day17_Ad]]&lt;/div&gt;
 
-</tw-passagedata><tw-passagedata pid="132" name="Day17_Ad" tags="nobr" position="5000,250" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+</tw-passagedata><tw-passagedata pid="131" name="Day17_Ad" tags="nobr" position="5000,250" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You step outside.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Across the street, a huge screen on one of the CBD towers is playing a bright, polished advertisement.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;A woman smiles confidently at the camera.&lt;/div&gt;
@@ -4346,8 +4493,8 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;You&#39;re already running late for work.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You don&#39;t really have the energy to think about it.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
-&lt;div class=&quot;type-link&quot;&gt;[[Go to work-&gt;Day17_WorkBlack]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="133" name="Day17_WorkBlack" tags="nobr" position="5000,375" size="100,100">&lt;div class=&quot;work-screen&quot;&gt;&lt;div class=&quot;work-text&quot;&gt;WORKING...&lt;/div&gt;&lt;/div&gt;
-&lt;&lt;timed 5s&gt;&gt;&lt;&lt;goto &quot;Day17_Report&quot;&gt;&gt;&lt;&lt;/timed&gt;&gt;</tw-passagedata><tw-passagedata pid="134" name="Day17_Report" tags="nobr" position="5000,500" size="100,100">/* 工作日结算:工资(Day8+为40) + sanity-40,沿用 Day16 写法 */
+&lt;div class=&quot;type-link&quot;&gt;[[Go to work-&gt;Day17_WorkBlack]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="132" name="Day17_WorkBlack" tags="nobr" position="5000,375" size="100,100">&lt;div class=&quot;work-screen&quot;&gt;&lt;div class=&quot;work-text&quot;&gt;WORKING...&lt;/div&gt;&lt;/div&gt;
+&lt;&lt;timed 5s&gt;&gt;&lt;&lt;goto &quot;Day17_Report&quot;&gt;&gt;&lt;&lt;/timed&gt;&gt;</tw-passagedata><tw-passagedata pid="133" name="Day17_Report" tags="nobr" position="5000,500" size="100,100">/* 工作日结算:工资(Day8+为40) + sanity-40,沿用 Day16 写法 */
 &lt;&lt;if not $hasWorkedToday&gt;&gt;
 &lt;&lt;set $money to $money + setup.dailyWage($day)&gt;&gt;
 &lt;&lt;set $sanity to Math.max(0, $sanity - 40)&gt;&gt;
@@ -4375,7 +4522,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;sys-report-foot&quot;&gt;&amp;gt; Stable. Keep optimising.&lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
-&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="135" name="Day17_Rumour" tags="nobr" position="5000,625" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="134" name="Day17_Rumour" tags="nobr" position="5000,625" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You&#39;ve been hearing rumours around the office.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Since Yakey was introduced, the company apparently doesn&#39;t need as many people as it used to.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
@@ -4389,7 +4536,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;your phone lights up.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day17_Playlist]]&lt;/div&gt;
-&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="136" name="Day17_Playlist" tags="nobr" position="5000,750" size="100,100">&lt;&lt;type 30ms&gt;&gt;
+&lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="135" name="Day17_Playlist" tags="nobr" position="5000,750" size="100,100">&lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;yakey-note&quot;&gt;&lt;strong&gt;Yakey&lt;/strong&gt;&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You may feel stressed this evening.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;A relaxing playlist has been prepared for you.&lt;/div&gt;
@@ -4404,7 +4551,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 ▢ &lt;&lt;link &quot;Turn it off.&quot;&gt;&gt;
 	&lt;&lt;replace &quot;#day17-playlist&quot;&gt;&gt;&lt;span class=&quot;system-text&quot;&gt;You turn it off.&lt;/span&gt;&lt;br&gt;&lt;br&gt;&lt;&lt;link &quot;Go to Shop&quot;&gt;&gt;&lt;&lt;goto &quot;Shop&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;br&gt;&lt;&lt;link &quot;Go to Sleep&quot;&gt;&gt;&lt;&lt;goto &quot;Day17_Sleep&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/replace&gt;&gt;
 &lt;&lt;/link&gt;&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="137" name="Day17_Sleep" tags="nobr" position="5000,875" size="100,100">&lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="136" name="Day17_Sleep" tags="nobr" position="5000,875" size="100,100">&lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;This night, you have an intensely unsettling nightmare.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;In the dream, Yakey is no longer just a machine.&lt;/div&gt;
@@ -4430,35 +4577,46 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Above you, Yakey lets out a sharp, hissing sound.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
-&lt;div class=&quot;type-link&quot;&gt;[[Wake up-&gt;NextDay]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="138" name="Day18_Start" tags="nobr" position="5150,125" size="100,100">&lt;h1&gt;DAY 18&lt;/h1&gt;
+&lt;div class=&quot;type-link&quot;&gt;[[Wake up-&gt;NextDay]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="137" name="Day18_Start" tags="nobr" position="5150,125" size="100,100">&lt;h1&gt;DAY 18&lt;/h1&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You wake up before your alarm.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
-&lt;div class=&quot;type-link&quot;&gt;[[Go to work-&gt;Day18_WorkBlack]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="139" name="Day18_Prediction" tags="nobr" position="5150,250" size="100,100">&lt;&lt;if $sanity lte 0&gt;&gt;
-&lt;&lt;goto &quot;Ending_Breakdown&quot;&gt;&gt;
+&lt;div class=&quot;type-link&quot;&gt;[[Go to work-&gt;Day18_WorkBlack]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="138" name="Day18_Prediction" tags="nobr" position="5150,250" size="100,100">&lt;&lt;if $sanity lte 0&gt;&gt;
+	&lt;&lt;goto &quot;Ending_Breakdown&quot;&gt;&gt;
 &lt;&lt;else&gt;&gt;
-&lt;div class=&quot;day18-overlay day18-overlay--enter&quot;&gt;
-&lt;div class=&quot;citizen-id day18-title&quot;&gt;GOOD MORNING, CITIZEN #8759&lt;/div&gt;
-&lt;div class=&quot;citizen-stats&quot;&gt;
-&lt;div&gt;Behavioural data contributed: 3.7 GB&lt;/div&gt;
-&lt;div&gt;Prediction confidence: 97.4%&lt;/div&gt;
-&lt;div&gt;Next 24 hours prepared.&lt;/div&gt;
+	/* 直接测试本 passage 时也启用 Day 18 白色背景。 */
+	&lt;&lt;run $(&quot;body&quot;).addClass(&quot;day18-whiteout&quot;)&gt;&gt;
+
+	&lt;div class=&quot;day18-overlay day18-overlay--enter&quot;&gt;
+		&lt;div class=&quot;citizen-id day18-title&quot;&gt;GOOD MORNING, CITIZEN #8759&lt;/div&gt;
+
+		&lt;div class=&quot;citizen-stats&quot;&gt;
+			&lt;div&gt;Behavioural data contributed: 3.7 GB&lt;/div&gt;
+			&lt;div&gt;Prediction confidence: 97.4%&lt;/div&gt;
+			&lt;div&gt;Next 24 hours prepared.&lt;/div&gt;
+		&lt;/div&gt;
+
+		&lt;div class=&quot;citizen-schedule&quot;&gt;
+			&lt;div&gt;Today&#39;s Prediction&lt;/div&gt;
+			&lt;div&gt;07:00 — Wake up&lt;/div&gt;
+			&lt;div&gt;08:00 — Take the bus A&lt;/div&gt;
+			&lt;div&gt;09:00 — Work&lt;/div&gt;
+			&lt;div&gt;11:15 — Feel slightly tired&lt;/div&gt;
+			&lt;div&gt;12:15 — Order sushi for lunch&lt;/div&gt;
+			&lt;div&gt;19:30 — Visit the shop&lt;/div&gt;
+			&lt;div&gt;22:00 — Chat with friend&lt;/div&gt;
+			&lt;div&gt;23:00 — Sleep&lt;/div&gt;
+		&lt;/div&gt;
+
+		[[Continue-&gt;Day18_Monologue]]
+	&lt;/div&gt;
+&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="139" name="Day18_WorkBlack" tags="nobr" position="5275,250" size="100,100">&lt;div class=&quot;work-screen-fade&quot;&gt;
+	&lt;div class=&quot;work-text-fade&quot;&gt;WORKING...&lt;/div&gt;
 &lt;/div&gt;
-&lt;div class=&quot;citizen-schedule&quot;&gt;
-&lt;div&gt;Today&#39;s Prediction&lt;/div&gt;
-&lt;div&gt;07:00 — Wake up&lt;/div&gt;
-&lt;div&gt;08:00 — Take the bus A&lt;/div&gt;
-&lt;div&gt;09:00 — Work&lt;/div&gt;
-&lt;div&gt;11:15 — Feel slightly tired&lt;/div&gt;
-&lt;div&gt;12:15 — Order sushi for lunch&lt;/div&gt;
-&lt;div&gt;19:30 — Visit the shop&lt;/div&gt;
-&lt;div&gt;22:00 — Chat with friend&lt;/div&gt;
-&lt;div&gt;23:00 — Sleep&lt;/div&gt;
-&lt;/div&gt;
-[[Continue-&gt;Day18_Monologue]]
-&lt;/div&gt;
-&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="140" name="Day18_WorkBlack" tags="nobr" position="5275,250" size="100,100">&lt;div class=&quot;work-screen-fade&quot;&gt;&lt;div class=&quot;work-text-fade&quot;&gt;WORKING...&lt;/div&gt;&lt;/div&gt;
-&lt;&lt;timed 5s&gt;&gt;&lt;&lt;goto &quot;Day18_Prediction&quot;&gt;&gt;&lt;&lt;/timed&gt;&gt;</tw-passagedata><tw-passagedata pid="141" name="Day18_Monologue" tags="nobr" position="5150,375" size="100,100">&lt;div class=&quot;day18-overlay&quot;&gt;
+
+&lt;&lt;timed 5s&gt;&gt;
+	&lt;&lt;goto &quot;Day18_Prediction&quot;&gt;&gt;
+&lt;&lt;/timed&gt;&gt;</tw-passagedata><tw-passagedata pid="140" name="Day18_Monologue" tags="nobr" position="5150,375" size="100,100">&lt;div class=&quot;day18-overlay&quot;&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You try to think of something else you could do.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Take a different bus.&lt;/div&gt;
@@ -4476,6 +4634,59 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;The button waits.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Ending_Numb]]&lt;/div&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="141" name="Day4_BirthdayReminder" tags="nobr" position="1775,550" size="100,100">/* 领取工资后进入本 passage，并用最新余额判断礼物购买资格。 */
+&lt;div class=&quot;home-line&quot;&gt;After work, you head home.&lt;/div&gt;
+&lt;div class=&quot;home-line&quot;&gt;Then you remember—&lt;/div&gt;
+&lt;div class=&quot;home-line&quot;&gt;&lt;strong&gt;It&#39;s your mom&#39;s birthday today.&lt;/strong&gt;&lt;/div&gt;
+&lt;div class=&quot;home-line&quot;&gt;She sent you a message earlier asking you to come for dinner.&lt;/div&gt;
+&lt;div class=&quot;home-line&quot;&gt;You still have one hour before the dinner begins.&lt;/div&gt;
+
+&lt;div class=&quot;home-line&quot;&gt;Would you like to bring her a gift?&lt;/div&gt;
+
+&lt;div class=&quot;choice-block&quot;&gt;
+	&lt;&lt;if $money gte 35&gt;&gt;
+		[[A. Buy a silk scarf in her favourite colour. (35 coins)-&gt;Day4_GiftScarf]]
+	&lt;&lt;else&gt;&gt;
+		&lt;span class=&quot;choice-disabled&quot;&gt;
+			A. Buy a silk scarf in her favourite colour. (need 35 coins)
+		&lt;/span&gt;
+	&lt;&lt;/if&gt;&gt;
+
+	&lt;br&gt;
+
+	&lt;&lt;if $money gte 15&gt;&gt;
+		[[B. Buy a small potted plant. (15 coins)-&gt;Day4_GiftPlant]]
+	&lt;&lt;else&gt;&gt;
+		&lt;span class=&quot;choice-disabled&quot;&gt;
+			B. Buy a small potted plant. (need 15 coins)
+		&lt;/span&gt;
+	&lt;&lt;/if&gt;&gt;
+
+	&lt;br&gt;
+
+	[[C. Go empty-handed. Just be there.-&gt;Day4_GiftNone]]
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="142" name="Day15_FriendReply" tags="nobr" position="4675,1175" size="100,100">/* Day 15：玩家回复朋友后的后续聊天。 */
+&lt;div class=&quot;phone-chat&quot;&gt;
+	&lt;div class=&quot;msg-sender&quot;&gt;FRIEND&lt;/div&gt;
+
+	&lt;div class=&quot;msg msg-out&quot;&gt;&quot;I&#39;m fine.&quot;&lt;/div&gt;
+
+	&lt;&lt;timed 1.2s&gt;&gt;
+		&lt;div class=&quot;msg msg-out&quot;&gt;
+			&quot;I guess I&#39;ve just been sighing a little more than usual.&quot;
+		&lt;/div&gt;
+
+		&lt;&lt;next 1.2s&gt;&gt;
+		&lt;div class=&quot;msg msg-in&quot;&gt;&quot;Maybe.&quot;&lt;/div&gt;
+
+		&lt;&lt;next 1.8s&gt;&gt;
+		&lt;div class=&quot;msg msg-in&quot;&gt;&quot;Just take care of yourself, okay?&quot;&lt;/div&gt;
+
+		&lt;&lt;next 0.8s&gt;&gt;
+		&lt;div class=&quot;reveal-link&quot;&gt;
+			[[Continue-&gt;Day15_End]]
+		&lt;/div&gt;
+	&lt;&lt;/timed&gt;&gt;
 &lt;/div&gt;</tw-passagedata></tw-storydata>
 	<script id="script-sugarcube" type="text/javascript">
 	/*! SugarCube JS */
