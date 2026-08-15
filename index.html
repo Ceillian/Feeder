@@ -104,7 +104,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<tw-storydata name="Feeder" startnode="3" creator="Twine" creator-version="2.12.0" format="SugarCube" format-version="2.37.3" ifid="3935CAB6-0E21-413E-8EB2-3A1A58FBC0DA" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* 在 Story Stylesheet 最顶部引入像素字体 */
+	<tw-storydata name="Feeder" startnode="64" creator="Twine" creator-version="2.12.0" format="SugarCube" format-version="2.37.3" ifid="3935CAB6-0E21-413E-8EB2-3A1A58FBC0DA" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* 在 Story Stylesheet 最顶部引入像素字体 */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
 
 /* 正文字号:调小到1.3em(原1.6em) */
@@ -811,8 +811,8 @@ body {
 .ad-flash-window .ad-window-foot { border-top:1px solid #f0c8c8; text-align:center; line-height:2.4; }
 .ad-flash-head { font-family:'Courier New',monospace; letter-spacing:2px; color:#c02020; font-weight:bold; }
 .ad-flash-timer { font-size:1.3em; color:#c02020; font-weight:bold; margin:8px 0; }
-.ad-flash-item { color:#2a2a33; font-weight:bold; margin:6px 0; }
-.ad-flash-tag { color:#8a6a6a; font-size:0.9em; font-style:italic; }
+.ad-flash-item { color:#e8e6e0; font-weight:bold; margin:6px 0; }
+.ad-flash-tag { color:#b0a8a8; font-size:0.9em; font-style:italic; }
 
 /* ===== Yakey广告:冷酷高端科技风 ===== */
 .ad-overlay {
@@ -1364,7 +1364,16 @@ body.ceillian-night #ceillian-data-rain {
 	letter-spacing: 1px;
 	color: #b8860b;
 }
-</style><script role="script" id="twine-user-script" type="text/twine-javascript">/* 隐藏 SugarCube 左上角的历史记录按钮。 */
+
+/* =========================Delete All Data 结局:打字完成后才淡入===================== */
+.free-ending-hidden { opacity: 0; }
+.free-ending-show {
+	animation: freeEndingFade 2.4s ease forwards;
+}
+@keyframes freeEndingFade {
+	0%   { opacity: 0; }
+	100% { opacity: 1; }
+}</style><script role="script" id="twine-user-script" type="text/twine-javascript">/* 隐藏 SugarCube 左上角的历史记录按钮。 */
 Config.history.controls = false;
 
 /* 只保留当前状态，禁止玩家回退重复领取奖励。 */
@@ -1562,13 +1571,20 @@ setup.shopItems = {
 	offline: { name:"🌙 Offline Mode", desc:"Disable behavioural tracking for one day.", price:10000, effect:"", special:"offline", once:true, rank:4 }
 };
 
-/* 任务6:Yakey每日推荐食物(按天数固定,当天不变) */
-setup.yakeyRecommend = function () {
-	var foods = ["bread","protein","soda","veg","coffee","candy","beer","sleeppill"];
-	var d = State.variables.day || 1;
-	return foods[d % foods.length];
-};
 
+/* Yakey每日推荐:固定两件(一件补饥饿、一件补理智),保证Ⅳ级也能续命 */
+/* 若昨天买过Tomorrow Prediction,则推荐提前指向"第 day+1 天"的画像 */
+setup.yakeyRecommendPair = function () {
+	var hungerFoods = ["bread", "protein", "veg"];
+	var sanityFoods = ["soda", "coffee", "candy"];
+	var d = State.variables.day || 1;
+	/* 预测过→用明天(n+1)的索引,营造"系统已替你安排好下一天"的感觉 */
+	if (State.variables.predictedTomorrow) { d = d + 1; }
+	return {
+		hunger: hungerFoods[d % hungerFoods.length],
+		sanity: sanityFoods[d % sanityFoods.length]
+	};
+};
 /* ==================================== 明日预测生成器：随机生成的"消费画像" ================================= */
 setup.tomorrowPrediction = function () {
 	var mood = Math.floor(Math.random() * 56) + 45;              // 45–100
@@ -1884,7 +1900,9 @@ $(document).one(":storyready", function () {
 $(document).on(":passagedisplay", function () {
     setup.refreshDataRainTheme();
 });
-  }</script><tw-tag name="widget" color="purple"></tw-tag><tw-tag name="nobr" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryInit" tags="" position="575,150" size="100,100">
+  }</script><tw-tag name="widget" color="purple"></tw-tag><tw-tag name="nobr" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryInit" tags="" position="575,150" size="100,100">/* 注册背景音乐。文件路径以发布后的 index.html 为起点。 */
+&lt;&lt;cacheaudio &quot;bgm_skimmed&quot; &quot;skimmed-steven-obrien.mp3&quot;&gt;&gt;
+
 /* ---------- 日程 ---------- */
 &lt;&lt;set $day to 1&gt;&gt;
 
@@ -1945,6 +1963,7 @@ $(document).on(":passagedisplay", function () {
 &lt;&lt;set $shopHistoryShared to false&gt;&gt;
 /* 商店Ⅲ级:永久拥有的书籍,不随每日重置 */
 &lt;&lt;set $ownedItems to []&gt;&gt;
+&lt;&lt;set $predictedTomorrow to false&gt;&gt;
 
 /* —— 后续天数新增变量,补登记 —— */
 &lt;&lt;set $lastWage to 0&gt;&gt;              /* 上次工资(显示用) */
@@ -2038,11 +2057,14 @@ $(document).on(":passagedisplay", function () {
 			&lt;/div&gt;
 
 			&lt;div class=&quot;task-window-footer&quot;&gt;
-				&lt;&lt;link &quot;Begin your first day&quot;&gt;&gt;
-					/* 点击后正式进入 Day 1 专属叙事。 */
-					&lt;&lt;goto &quot;Day1_LeaveHome&quot;&gt;&gt;
-				&lt;&lt;/link&gt;&gt;
-			&lt;/div&gt;
+	&lt;&lt;link &quot;Begin your first day&quot;&gt;&gt;
+		/* 玩家主动点击后开始播放背景音乐，避免浏览器拦截自动播放。 */
+		&lt;&lt;audio &quot;bgm_skimmed&quot; volume 0.35 loop play&gt;&gt;
+
+		/* 正式进入 Day 1 专属叙事。 */
+		&lt;&lt;goto &quot;Day1_LeaveHome&quot;&gt;&gt;
+	&lt;&lt;/link&gt;&gt;
+&lt;/div&gt;
 
 		&lt;/div&gt;
 	&lt;/div&gt;
@@ -2103,6 +2125,12 @@ $(document).on(":passagedisplay", function () {
 &lt;&lt;if $hunger lt 0&gt;&gt;
 	&lt;&lt;set $health to $health - 1&gt;&gt;
 	&lt;&lt;set $hunger to 0&gt;&gt;
+&lt;&lt;/if&gt;&gt;
+/* 换天总兜底:任何原因导致钱/血为负,统一在此拦截跳结局 */
+&lt;&lt;if $money lt 0&gt;&gt;
+	&lt;&lt;goto &quot;Ending_NoMoney&quot;&gt;&gt;
+&lt;&lt;elseif $health lte 0&gt;&gt;
+	&lt;&lt;goto &quot;Ending_Death&quot;&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
 /* 房租倒计时:仅供侧栏显示,实际收租交给各房租日的弹窗 */
@@ -2203,7 +2231,33 @@ $(document).on(":passagedisplay", function () {
 &lt;&lt;/link&gt;&gt;
 &lt;/div&gt;
 &lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="11" name="DeleteData" tags="" position="425,375" size="100,100">做成像垃圾桶一样的符号</tw-passagedata><tw-passagedata pid="12" name="Ending_Breakdown" tags="" position="75,650" size="100,100">/* ===== 结局：Sanity归零 ===== */
+</tw-passagedata><tw-passagedata pid="11" name="DeleteData" tags="nobr" position="425,375" size="100,100">/* 结局:选择Delete All Data,脱离系统的自由人 */
+/* 结局标题要等打字机打完再淡入,不能用会自动开跑的slow-reveal */
+&lt;&lt;type 30ms&gt;&gt;
+&lt;div class=&quot;home-line&quot;&gt;You finally can&#39;t take it anymore.&lt;/div&gt;
+&lt;div class=&quot;home-line&quot;&gt;You choose &lt;strong&gt;Delete All Data&lt;/strong&gt;.&lt;/div&gt;
+&lt;div class=&quot;home-line&quot;&gt;An old phone. Paper maps. Cash. DVDs. You learn to remember routes again instead of waiting for the system to tell you where to go.&lt;/div&gt;
+&lt;div class=&quot;home-line&quot;&gt;Later, you meet others who have left Yakey too. You trade food, repair old things, and talk to each other face to face.&lt;/div&gt;
+&lt;div class=&quot;home-line&quot;&gt;Life becomes slower, and more expensive. Without a data record, healthcare is harder to access, good jobs are difficult to find, and many services are no longer available to you.&lt;/div&gt;
+&lt;div class=&quot;home-line&quot;&gt;You paid a price for this choice.&lt;/div&gt;
+&lt;div class=&quot;home-line&quot;&gt;But some evenings, you sit by the window without waiting for any notification.&lt;/div&gt;
+&lt;div class=&quot;home-line&quot;&gt;It turns out these moments can be this peaceful.&lt;/div&gt;
+&lt;&lt;/type&gt;&gt;
+
+&lt;div id=&quot;free-ending&quot; class=&quot;free-ending-hidden&quot;&gt;
+&lt;div class=&quot;day18-title&quot; style=&quot;letter-spacing:1px; margin-top:1.6em;&quot;&gt;Alternate Ending: Free Person&lt;/div&gt;
+&lt;div style=&quot;margin-top:1.4em;&quot;&gt;
+&lt;&lt;link &quot;Restart&quot;&gt;&gt;
+	&lt;&lt;run Engine.restart()&gt;&gt;
+&lt;&lt;/link&gt;&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;&lt;script&gt;&gt;
+$(document).one(&#39;:typingcomplete&#39;, function () {
+	$(&#39;#free-ending&#39;).addClass(&#39;free-ending-show&#39;);
+});
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="12" name="Ending_Breakdown" tags="" position="75,650" size="100,100">/* ===== 结局：Sanity归零 ===== */
 /* 理智耗尽结局。 */
 
 &lt;h1&gt;Ending: Psycho&lt;/h1&gt;
@@ -2229,18 +2283,35 @@ $(document).on(":passagedisplay", function () {
 &lt;&lt;if $shopMessage&gt;&gt;&lt;div class=&quot;shop-msg&quot;&gt;&lt;&lt;= $shopMessage&gt;&gt;&lt;/div&gt;&lt;&lt;/if&gt;&gt;
 
 /* 置顶:Yakey今日推荐(唯一可买的食物) */
-&lt;&lt;set _rec to setup.yakeyRecommend()&gt;&gt;
-&lt;&lt;set _recIt to setup.shopItems[_rec]&gt;&gt;
-&lt;h2 class=&quot;yakey-rec-title&quot;&gt;Yakey Recommendation 😊&lt;/h2&gt;
+/* 置顶:Yakey今日推荐(两件——一件补饥饿、一件补理智,Ⅳ级也饿不死疯不掉) */
+&lt;&lt;set _pair to setup.yakeyRecommendPair()&gt;&gt;
+&lt;&lt;set _recH to _pair.hunger&gt;&gt;
+&lt;&lt;set _recS to _pair.sanity&gt;&gt;
+&lt;&lt;set _recHit to setup.shopItems[_recH]&gt;&gt;
+&lt;&lt;set _recSit to setup.shopItems[_recS]&gt;&gt;
+&lt;h2 class=&quot;yakey-rec-title&quot;&gt;Yakey Recommendation 😊&lt;&lt;if $predictedTomorrow&gt;&gt; · Prepared for Day &lt;&lt;print $day + 1&gt;&gt;&lt;&lt;/if&gt;&gt;&lt;/h2&gt;
+
 &lt;div class=&quot;shop-item yakey-rec&quot;&gt;
 	&lt;div class=&quot;item-info&quot;&gt;
-		&lt;span class=&quot;item-name&quot;&gt;&lt;&lt;= _recIt.name&gt;&gt;&lt;/span&gt;
+		&lt;span class=&quot;item-name&quot;&gt;&lt;&lt;= _recHit.name&gt;&gt;&lt;/span&gt;
 		&lt;span class=&quot;item-desc&quot;&gt;The perfect choice for you today. We know what you need.&lt;/span&gt;
-		&lt;span class=&quot;item-effect&quot;&gt;&lt;&lt;= _recIt.effect&gt;&gt;&lt;/span&gt;
-		&lt;span class=&quot;item-price&quot;&gt;💳 &lt;&lt;print setup.shopPrice(_recIt.price)&gt;&gt;&lt;/span&gt;
+		&lt;span class=&quot;item-effect&quot;&gt;&lt;&lt;= _recHit.effect&gt;&gt;&lt;/span&gt;
+		&lt;span class=&quot;item-price&quot;&gt;💳 &lt;&lt;print setup.shopPrice(_recHit.price)&gt;&gt;&lt;/span&gt;
 	&lt;/div&gt;
 	&lt;div class=&quot;item-action&quot;&gt;
-		&lt;&lt;capture _rec&gt;&gt;&lt;&lt;link &quot;Buy&quot;&gt;&gt;&lt;&lt;buyitem _rec&gt;&gt;&lt;&lt;goto &quot;Shop&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/capture&gt;&gt;
+		&lt;&lt;capture _recH&gt;&gt;&lt;&lt;link &quot;Buy&quot;&gt;&gt;&lt;&lt;buyitem _recH&gt;&gt;&lt;&lt;goto &quot;Shop&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/capture&gt;&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;shop-item yakey-rec&quot;&gt;
+	&lt;div class=&quot;item-info&quot;&gt;
+		&lt;span class=&quot;item-name&quot;&gt;&lt;&lt;= _recSit.name&gt;&gt;&lt;/span&gt;
+		&lt;span class=&quot;item-desc&quot;&gt;Something to keep you calm. We know what you need.&lt;/span&gt;
+		&lt;span class=&quot;item-effect&quot;&gt;&lt;&lt;= _recSit.effect&gt;&gt;&lt;/span&gt;
+		&lt;span class=&quot;item-price&quot;&gt;💳 &lt;&lt;print setup.shopPrice(_recSit.price)&gt;&gt;&lt;/span&gt;
+	&lt;/div&gt;
+	&lt;div class=&quot;item-action&quot;&gt;
+		&lt;&lt;capture _recS&gt;&gt;&lt;&lt;link &quot;Buy&quot;&gt;&gt;&lt;&lt;buyitem _recS&gt;&gt;&lt;&lt;goto &quot;Shop&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/capture&gt;&gt;
 	&lt;/div&gt;
 &lt;/div&gt;
 
@@ -2268,7 +2339,7 @@ $(document).on(":passagedisplay", function () {
 /* 其余商品:全部灰显不可选 */
 &lt;h2&gt;No Longer Available&lt;/h2&gt;
 &lt;&lt;for _lid, _lit range setup.shopItems&gt;&gt;
-	&lt;&lt;if not [&quot;voucher&quot;,&quot;stream&quot;,&quot;predict&quot;,&quot;offline&quot;].includes(_lid) and _lid isnot _rec&gt;&gt;
+	&lt;&lt;if not [&quot;voucher&quot;,&quot;stream&quot;,&quot;predict&quot;,&quot;offline&quot;].includes(_lid) and _lid isnot _recH and _lid isnot _recS&gt;&gt;
 		&lt;&lt;if not (_lit.permanent and $ownedItems.includes(_lid))&gt;&gt;
 			&lt;div class=&quot;shop-item locked&quot;&gt;
 				&lt;div class=&quot;item-info&quot;&gt;&lt;span class=&quot;item-name&quot;&gt;&lt;&lt;= _lit.name&gt;&gt;&lt;/span&gt;&lt;/div&gt;
@@ -2523,7 +2594,7 @@ $(document).on(":passagedisplay", function () {
 &lt;/div&gt;
 &lt;/div&gt;
 </tw-passagedata><tw-passagedata pid="21" name="Day3_BusRide" tags="nobr" position="1650,675" size="100,100">/* Bus 仅扣除 10 Coins，不恢复 Sanity。 */
-
+&lt;&lt;if $money lt 10&gt;&gt;&lt;&lt;goto &quot;Ending_NoMoney&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;
 &lt;&lt;set $money to $money - 10&gt;&gt;
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
 &lt;h1&gt;Day 3 · Home&lt;/h1&gt;
@@ -2532,6 +2603,7 @@ $(document).on(":passagedisplay", function () {
 </tw-passagedata><tw-passagedata pid="22" name="Day3_TaxiRide" tags="nobr" position="1525,675" size="100,100">/* 根据是否上传定位数据，结算 Taxi 的 0 或 30 Coins 费用。 */
 
 &lt;&lt;set _cost to $taxiDiscountActive ? 0 : 30&gt;&gt;
+&lt;&lt;if $money lt _cost&gt;&gt;&lt;&lt;goto &quot;Ending_NoMoney&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;
 &lt;&lt;set $money to $money - _cost&gt;&gt;
 &lt;&lt;set $sanity to Math.min(100, $sanity + 10)&gt;&gt;
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
@@ -2724,7 +2796,8 @@ You decide:
 			&lt;&lt;set $offlineToday to true&gt;&gt;
 			&lt;&lt;set $shopMessage to &quot;Offline Mode enabled. Tracking disabled for today.&quot;&gt;&gt;
 		&lt;&lt;elseif _it.special is &quot;predict&quot;&gt;&gt;
-			&lt;&lt;set $shopMessage to setup.tomorrowPrediction()&gt;&gt;
+	&lt;&lt;set $predictedTomorrow to true&gt;&gt;
+	&lt;&lt;set $shopMessage to setup.tomorrowPrediction()&gt;&gt;
 		&lt;&lt;elseif _it.boughtMsg&gt;&gt;
 			&lt;&lt;set $shopMessage to _it.boughtMsg&gt;&gt;
 		&lt;&lt;else&gt;&gt;
@@ -3280,7 +3353,8 @@ You decide:
 &lt;&lt;replace &quot;#cd&quot;&gt;&gt;&lt;&lt;print $chickenTimer&gt;&gt;&lt;&lt;/replace&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/repeat&gt;&gt;
-</tw-passagedata><tw-passagedata pid="61" name="Day8_Order" tags="nobr" position="2650,825" size="100,100">/* 下单:-15币,+20理智,+2饥饿;末尾汇入朋友通知(总) */
+</tw-passagedata><tw-passagedata pid="61" name="Day8_Order" tags="nobr" position="2650,825" size="100,100">&lt;&lt;if $money lt 15&gt;&gt;&lt;&lt;goto &quot;Ending_NoMoney&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;
+/* 下单:-15币,+20理智,+2饥饿;末尾汇入朋友通知(总) */
 &lt;&lt;set $money to $money - 15&gt;&gt;
 &lt;&lt;set $sanity to Math.min(100, $sanity + 20)&gt;&gt;
 &lt;&lt;set $hunger to Math.min($hungerMax, $hunger + 2)&gt;&gt;
@@ -3341,7 +3415,7 @@ You decide:
 &lt;div class=&quot;home-line&quot;&gt;It isn&#39;t particularly satisfying.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;But it&#39;ll do.&lt;/div&gt;
 &lt;div class=&quot;reveal-link&quot;&gt;[[Continue-&gt;Day8_Friend]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="64" name="Debug" tags="" position="2450,50" size="100,100">/* ========== Day 15 至 Day 18 连续剧情测试 ========== */
+</tw-passagedata><tw-passagedata pid="64" name="Debug" tags="" position="900,75" size="100,100">/* ========== Day 15 至 Day 18 连续剧情测试 ========== */
 
 /* 当前测试日期。 */
 &lt;&lt;set $day to 15&gt;&gt;
@@ -3358,7 +3432,7 @@ You decide:
 &lt;&lt;set $sanity to 200&gt;&gt;
 
 /* 使用当前等级门槛时，95 点为 Rank IV。 */
-&lt;&lt;set $ceillianPoints to 95&gt;&gt;
+&lt;&lt;set $ceillianPoints to 100&gt;&gt;
 
 /* Day 13 交租后，Day 15 剩余一天。 */
 &lt;&lt;set $rentAmount to 30&gt;&gt;
@@ -3410,7 +3484,7 @@ You decide:
 &lt;&lt;set $achievements to []&gt;&gt;
 
 /* 正式进入 Day 15，并从此处按正常睡眠流程推进日期。 */
-&lt;&lt;goto &quot;Day18_Start&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="65" name="Day9_Start" tags="nobr" position="2850,200" size="100,100">/* Day9开场 */
+&lt;&lt;goto &quot;Day13_Morning&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="65" name="Day9_Start" tags="nobr" position="2850,200" size="100,100">/* Day9开场 */
 &lt;h1&gt;Day 9&lt;/h1&gt;
 	/* 早晨：可购物或上班。 */
 		&lt;div class=&quot;home-line&quot;&gt;
@@ -3576,10 +3650,11 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 	&lt;&lt;/switch&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 </tw-passagedata><tw-passagedata pid="74" name="Day10_Start" tags="nobr" position="3150,200" size="100,100">/* Day10房租日:弹窗收30币,交完进晨间 */
-&lt;h1&gt;Day 10&lt;/h1&gt;
 &lt;&lt;rentnotice &quot;Day10_Morning&quot;&gt;&gt;
 
-</tw-passagedata><tw-passagedata pid="75" name="Day10_Morning" tags="nobr" position="3150,325" size="100,100">&lt;&lt;news &quot;A safer city for everyone! Ceillian launches smart tags tracking for stray animals🐶🐱&quot;&gt;&gt;
+</tw-passagedata><tw-passagedata pid="75" name="Day10_Morning" tags="nobr" position="3150,325" size="100,100">&lt;h1&gt;DAY 10&lt;/h1&gt;
+
+&lt;&lt;news &quot;A safer city for everyone! Ceillian launches smart tags tracking for stray animals🐶🐱&quot;&gt;&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;The morning air feels colder than yesterday.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You check your balance before leaving for work.&lt;/div&gt;
@@ -3612,7 +3687,8 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;type-link&quot;&gt;[[Take the taxi (−25 Coins)-&gt;Day10_Taxi]]&lt;/div&gt;
 &lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;
 &lt;&lt;/linkreplace&gt;&gt;&lt;/span&gt;
-</tw-passagedata><tw-passagedata pid="77" name="Day10_Taxi" tags="nobr" position="3150,575" size="100,100">&lt;&lt;set $money to $money - 25&gt;&gt;
+</tw-passagedata><tw-passagedata pid="77" name="Day10_Taxi" tags="nobr" position="3150,575" size="100,100">&lt;&lt;if $money lt 25&gt;&gt;&lt;&lt;goto &quot;Ending_NoMoney&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;
+&lt;&lt;set $money to $money - 25&gt;&gt;
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;−25 Coins&lt;/span&gt;&lt;/div&gt;
@@ -3873,6 +3949,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Day11_Protest]]&lt;/div&gt;
 </tw-passagedata><tw-passagedata pid="89" name="Day11_ClinicDone" tags="nobr" position="3500,575" size="100,100">/* 看医生:-30币静默扣,请病假无工资 */
 &lt;&lt;if not $hasWorkedToday&gt;&gt;
+&lt;&lt;if $money lt 30&gt;&gt;&lt;&lt;goto &quot;Ending_NoMoney&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;
 &lt;&lt;set $money to $money - 30&gt;&gt;
 &lt;&lt;set $hasWorkedToday to true&gt;&gt;
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
@@ -3882,8 +3959,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;After a short examination, the doctor prescribes a few days of medication.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You took the medicine and returned home.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
-&lt;div class=&quot;type-link&quot;&gt;[[Go home-&gt;Home]]&lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="90" name="Day12_Morning" tags="nobr" position="3750,100" size="100,100">&lt;h1&gt;DAY 12&lt;/h1&gt;
+&lt;div class=&quot;type-link&quot;&gt;[[Go home-&gt;Home]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="90" name="Day12_Morning" tags="nobr" position="3750,100" size="100,100">&lt;h1&gt;DAY 12&lt;/h1&gt;
 &lt;&lt;news &quot;Our Workforce, Your Best Recruiters! Caring Friends has officially launched, winning this year&#39;s King&#39;s Innovation Award&quot;&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;&lt;type 30ms&gt;&gt;
@@ -4022,8 +4098,9 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 	&lt;/div&gt;
 &lt;&lt;/if&gt;&gt;
 </tw-passagedata><tw-passagedata pid="101" name="Day13_Morning" tags="nobr" position="4025,125" size="100,100">/* Day13房租日:先弹30币房租,交完进正文 */
-&lt;h1&gt;DAY 13&lt;/h1&gt;
-&lt;&lt;rentnotice &quot;Day13_Intro&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="102" name="Day13_Intro" tags="nobr" position="4025,250" size="100,100">&lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
+&lt;&lt;rentnotice &quot;Day13_Intro&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="102" name="Day13_Intro" tags="nobr" position="4025,250" size="100,100">&lt;h1&gt;DAY 13&lt;/h1&gt;
+
+&lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;&lt;strong&gt;It&#39;s finally Saturday.&lt;/strong&gt;&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;The sky is overcast, but it hasn&#39;t started raining.&lt;/div&gt;
