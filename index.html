@@ -104,7 +104,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<tw-storydata name="Feeder" startnode="3" creator="Twine" creator-version="2.12.0" format="SugarCube" format-version="2.37.3" ifid="3935CAB6-0E21-413E-8EB2-3A1A58FBC0DA" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* 在 Story Stylesheet 最顶部引入像素字体 */
+	<tw-storydata name="Feeder" startnode="64" creator="Twine" creator-version="2.12.0" format="SugarCube" format-version="2.37.3" ifid="3935CAB6-0E21-413E-8EB2-3A1A58FBC0DA" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* 在 Story Stylesheet 最顶部引入像素字体 */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
 
 /* 正文字号:调小到1.3em(原1.6em) */
@@ -1902,6 +1902,15 @@ $(document).on(":passagedisplay", function () {
 });
   }</script><tw-tag name="widget" color="purple"></tw-tag><tw-tag name="nobr" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryInit" tags="" position="575,150" size="100,100">/* 注册背景音乐。文件路径以发布后的 index.html 为起点。 */
 &lt;&lt;cacheaudio &quot;bgm_skimmed&quot; &quot;skimmed-steven-obrien.mp3&quot;&gt;&gt;
+&lt;&lt;script&gt;&gt;
+$(document).one(&#39;click&#39;, function () {
+if (typeof SimpleAudio !== &#39;undefined&#39;) {
+SimpleAudio.select(&#39;bgm_skimmed&#39;).loop(true).volume(0.35).play()
+.then(function () { console.log(&#39;BGM playing&#39;); })
+.catch(function (e) { console.log(&#39;BGM failed:&#39;, e); });
+}
+});
+&lt;&lt;/script&gt;&gt;
 
 /* ---------- 日程 ---------- */
 &lt;&lt;set $day to 1&gt;&gt;
@@ -1945,7 +1954,7 @@ $(document).on(":passagedisplay", function () {
 /* ---------- 统计与成就 ---------- */
 &lt;&lt;set $refuseUploadCount to 0&gt;&gt;
 &lt;&lt;set $achievements to []&gt;&gt;
-```
+
 /* 记录当前准备购买的商品 ID，供 BuyShopItem 统一结算。 */
 &lt;&lt;set $shopItem to &quot;&quot;&gt;&gt;
 
@@ -2059,7 +2068,7 @@ $(document).on(":passagedisplay", function () {
 			&lt;div class=&quot;task-window-footer&quot;&gt;
 	&lt;&lt;link &quot;Begin your first day&quot;&gt;&gt;
 		/* 玩家主动点击后开始播放背景音乐，避免浏览器拦截自动播放。 */
-		&lt;&lt;audio &quot;bgm_skimmed&quot; volume 0.35 loop play&gt;&gt;
+		&lt;&lt;audio &quot;bgm_skimmed&quot; volume 0.35 loop&gt;&gt;
 
 		/* 正式进入 Day 1 专属叙事。 */
 		&lt;&lt;goto &quot;Day1_LeaveHome&quot;&gt;&gt;
@@ -2236,7 +2245,7 @@ $(document).on(":passagedisplay", function () {
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You finally can&#39;t take it anymore.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You choose &lt;strong&gt;Delete All Data&lt;/strong&gt;.&lt;/div&gt;
-&lt;div class=&quot;home-line&quot;&gt;An old phone. Paper maps. Cash. DVDs. You learn to remember routes again instead of waiting for the system to tell you where to go.&lt;/div&gt;
+&lt;div class=&quot;home-line&quot;&gt;A dumb phone. Paper maps. Cash. DVDs. You learn to remember routes again instead of waiting for the system to tell you where to go.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Later, you meet others who have left Yakey too. You trade food, repair old things, and talk to each other face to face.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Life becomes slower, and more expensive. Without a data record, healthcare is harder to access, good jobs are difficult to find, and many services are no longer available to you.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;You paid a price for this choice.&lt;/div&gt;
@@ -2655,7 +2664,7 @@ You decide:
 &lt;/div&gt;
 </tw-passagedata><tw-passagedata pid="24" name="Day4_Morning" tags="nobr" position="1900,150" size="100,100">/* Day4：先弹房租窗口，交完租再进上班流程 */
 &lt;h1&gt;Day 4&lt;/h1&gt;
-&lt;&lt;rentnotice &quot;Day4_Walk&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="25" name="Day4_GiftPlant" tags="nobr" position="1925,700" size="100,100">
+&lt;&lt;rentnotice &quot;Day4_Walk&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="25" name="Day4_GiftPlant" tags="nobr" position="1900,675" size="100,100">
 /* 购买桌面植物。 */
 /* 选项B：盆栽 -15 coins，Sanity +15 */
 &lt;&lt;set $money to $money - 15&gt;&gt;
@@ -2670,7 +2679,7 @@ You decide:
 &lt;div class=&quot;home-line&quot;&gt;The two of you spend a happy evening together.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;Sanity +15&lt;/span&gt;&lt;/div&gt;
 [[Go home-&gt;Day4_Evening]]
-</tw-passagedata><tw-passagedata pid="26" name="Day4_GiftScarf" tags="nobr" position="1800,700" size="100,100">/* 购买丝巾，并获得与母亲相处带来的理智恢复。 */
+</tw-passagedata><tw-passagedata pid="26" name="Day4_GiftScarf" tags="nobr" position="1775,675" size="100,100">/* 购买丝巾，并获得与母亲相处带来的理智恢复。 */
 /* 选项A：丝巾 -35 coins，Sanity +20，记录礼物供后续可能回调 */
 &lt;&lt;set $money to $money - 35&gt;&gt;
 &lt;&lt;set $sanity to Math.min(100, $sanity + 20)&gt;&gt;
@@ -3063,7 +3072,7 @@ You decide:
 			[[Continue-&gt;Day4_BirthdayReminder]]
 		&lt;/div&gt;
 	&lt;&lt;/if&gt;&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="43" name="Day4_GiftNone" tags="nobr" position="2050,700" size="100,100">/* 选项C：空手赴约，无扣币，Sanity +10 */
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="43" name="Day4_GiftNone" tags="nobr" position="2025,675" size="100,100">/* 选项C：空手赴约，无扣币，Sanity +10 */
 &lt;&lt;set $sanity to Math.min(100, $sanity + 10)&gt;&gt;
 &lt;&lt;set $day4Gift to &quot;none&quot;&gt;&gt;
 &lt;&lt;run setup.refreshCaption()&gt;&gt;
@@ -3074,7 +3083,7 @@ You decide:
 &lt;div class=&quot;home-line&quot;&gt;Before you leave, she packs some leftovers for you.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&lt;span class=&quot;system-text&quot;&gt;Sanity +10&lt;/span&gt;&lt;/div&gt;
 [[Go home-&gt;Day4_Evening]]
-</tw-passagedata><tw-passagedata pid="44" name="Day4_Evening" tags="nobr" position="1925,825" size="100,100">/* 回家后 Yakey 短视频推荐授权 */
+</tw-passagedata><tw-passagedata pid="44" name="Day4_Evening" tags="nobr" position="1900,800" size="100,100">/* 回家后 Yakey 短视频推荐授权 */
 &lt;div class=&quot;home-line&quot;&gt;Back home, your phone lights up.&lt;/div&gt;
 
 &lt;div class=&quot;yakey-box&quot;&gt;
@@ -3484,7 +3493,7 @@ You decide:
 &lt;&lt;set $achievements to []&gt;&gt;
 
 /* 正式进入 Day 15，并从此处按正常睡眠流程推进日期。 */
-&lt;&lt;goto &quot;Day13_Morning&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="65" name="Day9_Start" tags="nobr" position="2850,200" size="100,100">/* Day9开场 */
+&lt;&lt;goto &quot;Day17_Start&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="65" name="Day9_Start" tags="nobr" position="2850,200" size="100,100">/* Day9开场 */
 &lt;h1&gt;Day 9&lt;/h1&gt;
 	/* 早晨：可购物或上班。 */
 		&lt;div class=&quot;home-line&quot;&gt;
@@ -4618,7 +4627,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;You may feel stressed this evening.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;A relaxing playlist has been prepared for you.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
-&lt;div id=&quot;day17-playlist&quot; class=&quot;type-link choice-block&quot;&gt;
+&lt;div id=&quot;day17-playlist&quot; class=&quot;choice-block&quot;&gt;
 ▢ &lt;&lt;link &quot;Play (Sanity +10)&quot;&gt;&gt;
 	&lt;&lt;set $sanity to Math.min($sanityMax, $sanity + 10)&gt;&gt;
 	&lt;&lt;run setup.refreshCaption()&gt;&gt;
@@ -4654,7 +4663,10 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;&amp;nbsp;&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Above you, Yakey lets out a sharp, hissing sound.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
-&lt;div class=&quot;type-link&quot;&gt;[[Wake up-&gt;NextDay]]&lt;/div&gt;</tw-passagedata><tw-passagedata pid="137" name="Day18_Start" tags="nobr" position="5150,125" size="100,100">&lt;h1&gt;DAY 18&lt;/h1&gt;
+&lt;div id=&quot;day17-wake&quot; class=&quot;type-link&quot;&gt;[[Wake up-&gt;NextDay]]&lt;/div&gt;
+&lt;&lt;script&gt;&gt;
+setTimeout(function () { $(&#39;#day17-wake&#39;).addClass(&#39;shown&#39;); }, 9000);
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="137" name="Day18_Start" tags="nobr" position="5150,125" size="100,100">&lt;h1&gt;DAY 18&lt;/h1&gt;
 &lt;&lt;type 30ms&gt;&gt;
 &lt;div class=&quot;home-line&quot;&gt;You wake up before your alarm.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
@@ -4711,7 +4723,7 @@ Yakey can learn your working habits, organise your tasks more efficiently, assis
 &lt;div class=&quot;home-line&quot;&gt;The button waits.&lt;/div&gt;
 &lt;&lt;/type&gt;&gt;
 &lt;div class=&quot;type-link&quot;&gt;[[Continue-&gt;Ending_Numb]]&lt;/div&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="141" name="Day4_BirthdayReminder" tags="nobr" position="1775,550" size="100,100">/* 领取工资后进入本 passage，并用最新余额判断礼物购买资格。 */
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="141" name="Day4_BirthdayReminder" tags="nobr" position="1750,550" size="100,100">/* 领取工资后进入本 passage，并用最新余额判断礼物购买资格。 */
 &lt;div class=&quot;home-line&quot;&gt;After work, you head home.&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;Then you remember—&lt;/div&gt;
 &lt;div class=&quot;home-line&quot;&gt;&lt;strong&gt;It&#39;s your mom&#39;s birthday today.&lt;/strong&gt;&lt;/div&gt;
